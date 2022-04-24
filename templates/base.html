@@ -1,0 +1,207 @@
+{% extends 'bootstrap4/bootstrap4.html' %}
+
+{% load static %}
+{% load bootstrap4 %}
+
+{% block bootstrap4_title %}
+    myBooks
+{% endblock %}
+
+{% block bootstrap4_extra_head %}
+    <meta name="description" content="{% block meta_content %}eTrack{% endblock %}">
+    <meta name="author" content="Alex Kwak">
+    <meta property="og:site_name" content="alexkwak.nl">
+
+    <script type="text/javascript" src="{% static "plugins/jquery/jquery.min.js" %}"></script>
+    <script type='text/javascript' src="{% static "plugins/jquery/jquery-ui.min.js" %}"></script>
+    <link rel='stylesheet' type='text/css' href="{% static "plugins/jquery/jquery-ui.min.css" %}"/>
+    {{ form.media.js }}
+
+    <link rel="stylesheet" type="text/css" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/books.css' %}">
+    {{ form.media.css }}
+    {% bootstrap_css %}
+
+    {% bootstrap_javascript jquery='full' %}
+
+    {# Display django.contrib.messages as Bootstrap alerts #}
+    {% bootstrap_messages %}
+
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}">
+
+    <style>
+        table, tr, td {
+            vertical-align: top;
+        }
+
+        th, td {
+            padding-right: 15px;
+        }
+    </style>
+
+    {% block head_js %}
+        <script>
+            $(document).ready(function () {
+                function show_time() {
+                    const dt = new Date();
+                    $("#time").html(dt.toTimeString().slice(0, 8));
+                }
+
+                show_time();
+                setInterval(function () {
+                    show_time()
+                }, 1000);
+            })
+
+        </script>
+        <script>
+            $(document).ready(function () {
+                $('#addBook').on('input',function(e){
+                    var text = $("#addBook").val();
+                    if (is_valid_isbn13(text)) {
+                        add_book_by_isbn(text);
+                    }
+                    if (is_valid_isbn10(text)) {
+                        add_book_by_isbn(text);
+                    }
+                    if (text.endsWith('.')) {
+                        add_book_by_text(text);
+                    }
+
+                    function add_book_by_isbn(isbn) {
+                        $("#wait").show();
+                        $.get("/books/scrape/isbn/" + isbn + "/", function (data) {
+                            var newDoc = document.open("text/html", "replace");
+                            newDoc.write(data);
+                            newDoc.close();
+                        });
+                    }
+
+                    function add_book_by_text(text) {
+                        $("#wait").show();
+                        text = text.replace(/ /g, "_");
+                        text = text.replace(/\//g, "_");
+                        text = text.replace(/\./g, "_");
+                        $.get("/books/scrape/text/" + text + "/", function (data) {
+                            var newDoc = document.open("text/html", "replace");
+                            newDoc.write(data);
+                            newDoc.close();
+                        });
+                    }
+
+                    function is_valid_isbn13(str) {
+                        var sum, weight, digit, check, i;
+
+                        str = str.replace(/[^0-9X]/gi, '');
+                        if (str.length !== 13) {
+                            return false;
+                        }
+
+                        sum = 0;
+                        for (i = 0; i < 12; i++) {
+                            digit = parseInt(str[i]);
+                            if (i % 2 === 1) {
+                                sum += 3*digit;
+                            } else {
+                                sum += digit;
+                            }
+                        }
+                        check = (10 - (sum % 10)) % 10;
+                        return (check == str[str.length-1]);
+                    }
+
+                    function is_valid_isbn10(str) {
+                        var sum, weight, digit, check, i;
+
+                        str = str.replace(/[^0-9X]/gi, '');
+                        if (str.length !== 10) {
+                            return false;
+                        }
+
+                        weight = 10;
+                        sum = 0;
+                        for (i = 0; i < 9; i++) {
+                            digit = parseInt(str[i]);
+                            sum += weight*digit;
+                            weight--;
+                        }
+                        check = (11 - (sum % 11)) % 11
+                        if (check === 10) {
+                            check = 'X';
+                        }
+                        return (check == str[str.length-1].toUpperCase());
+                    }
+
+                });
+
+                $("#wait").hide();
+                $("#addBook").focus();
+            })
+        </script>
+    {% endblock %}
+    {% block head_extra %}
+    {% endblock %}
+{% endblock %}
+
+{% block bootstrap4_content %}
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-2">
+                <!-- Time and info -->
+                <div class="big" id="time"></div>
+
+                <img alt="logo" src="{% static "img/books.jpg" %}" width="120" height="120">
+                <br>
+                <ul class="nav flex-column">
+                    <h3>myBooks 0.9</h3>
+                    {% url 'book_list' as books_url %}
+                    {% url 'book_create' as books_add_url %}
+                    {% url 'author_list' as authors_url %}
+                    {% url 'sub_category_list' as sub_categories_url %}
+                    {% url 'serie_list' as series_url %}
+                    {% url 'publisher_list' as publishers_url %}
+                    {% url 'maintenance' as maintenance_url %}
+                    {% url 'export_json' as export_json_url %}
+                    {% url 'export_excel' as export_excel_url %}
+
+                    <li><a href="{{ books_url }}">Books</a></li>
+                    <li><a href="{{ books_add_url }}">Add book</a></li>
+                    <li>&nbsp;</li>
+                    <li><a href="{{ authors_url }}">Authors</a></li>
+                    <li><a href="{{ sub_categories_url }}">Categories</a></li>
+                    <li><a href="{{ series_url }}">Series</a></li>
+                    <li><a href="{{ publishers_url }}">Publishers</a></li>
+                    <li>&nbsp;</li>
+                    <li><a href="{{ export_json_url }}">Export JSON</a></li>
+                    <li><a href="{{ export_excel_url }}">Export Excel</a></li>
+                    <li>&nbsp;</li>
+                    <li><a href="{{ maintenance_url }}">Maintenance</a></li>
+                </ul>
+
+                <hr>
+                <p>
+                    <input id="addBook" type="text" name="addBook" class="isbn-field input-lg" size="40" title="" placeholder="">
+                    <br> Add Book by ISBN10/13 or title<br>
+                    <div id="wait" name="wait" class="wait">
+                        <img alt="logo" src="{% static "img/waiting.gif" %}" width="120" height="120">
+                    </div>
+                </p>
+                <hr>
+
+                <p>Copyright &copy;2022<br>Alex Kwak</p>
+
+            </div>
+
+            <div class="col-sm-10">
+                {% block books_content %}{% endblock %}
+            </div>
+
+        </div>
+    </div>
+    <div id="dummy"></div>
+
+{% endblock %}
+

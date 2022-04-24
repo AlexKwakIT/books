@@ -1,0 +1,17 @@
+Django==4.0.3
+Pillow==9.0.1
+beautifulsoup4==4.10.0
+django-tables2==2.4.1
+django-bootstrap4
+django-jquery==3.1.0
+django-jquery-ui==1.11.4.1
+django-bootstrap-form
+requests==2.27.1
+isort
+black
+django-select2
+pymemcache==3.5.2
+autoflake
+django-filter
+xlsxwriter
+pyisbn

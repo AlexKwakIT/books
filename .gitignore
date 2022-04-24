@@ -1,0 +1,4 @@
+﻿.idea/inspectionProfiles
+.idea
+books/__pycache__
+books/migrations/__pycache__

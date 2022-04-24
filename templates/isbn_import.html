@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load render_table from django_tables2 %}
+
+{% block navbar %}
+    {% with active='nav_status' %}
+        {{ block.super }}
+    {% endwith %}
+{% endblock %}
+
+{% block head_js %}
+    {{ block.super }}
+
+    <script>
+        $(document).ready(function () {
+            let import_ready = false;
+
+            function show_import_status() {
+                $("#import_status").load("/import-status/", function() {
+                    if (!import_ready) {
+                        setTimeout(function () {
+                            show_import_status();
+                        }, 500);
+                    }
+                });
+            }
+
+            function import_isbn() {
+                $("#dummy").load("/import-isbn/", function() { });
+            }
+
+            setTimeout(function() {
+                import_isbn();
+                show_import_status();
+            }, 1);
+
+        });
+    </script>
+
+{% endblock %}
+
+{% block books_content %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <div id="import_status"></div>
+        </div>
+    </div>
+{% endblock %}

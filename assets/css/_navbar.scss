@@ -1,0 +1,14 @@
+.global-navbar {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.global-navbar-search {
+  @include breakpoint(xs) {
+    padding-right: inherit;
+  }
+  @include breakpoint(sm) {
+    padding-right: 0;
+  }
+}

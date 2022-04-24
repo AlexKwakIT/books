@@ -1,0 +1,35 @@
+.row.row-flex {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+.row-row-flex-sm {
+  @include breakpoint(xs) {
+    display: inherit;
+  }
+  @include breakpoint(sm) {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+  }
+
+}
+
+.row-row-flex-md {
+  @include breakpoint(xs) {
+    display: inherit;
+  }
+  @include breakpoint(sm) {
+    display: inherit;
+  }
+  @include breakpoint(md) {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+  }
+
+}

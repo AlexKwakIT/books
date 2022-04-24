@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% url 'book_add_text' as add_url %}
+
+{% block books_content %}
+
+    <h1>Get book by text {{ add_url }}</h1>
+    <form action="/books/add/text/">
+        <label for="text"></label>
+        <input id="text" name="text">
+        <input type="submit">
+    </form>
+
+{% endblock %}

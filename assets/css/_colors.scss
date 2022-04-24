@@ -1,0 +1,12 @@
+$blue: #0070b1;
+$lightblue: #80b5d4;
+$gray: #404040;
+$lightgray: #eee;
+$mediumgray: #ccc;
+$bgbody: $lightgray;
+$bgpage: #fff;
+
+.color-primary {
+  color: $blue;
+  fill: $blue !important;
+}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+
+{% block books_content %}
+
+    <h1>Maintenance</h1>
+
+    <p>
+        {% url 'bulk_import' as bulk_import_url %}
+        <a href="{{ bulk_import_url }}">Bulk Import</a>
+    </p>
+
+    <p>
+        {% url 'clean' as clean_url %}
+        <a href="{{ clean_url }}">Clean</a>
+    </p>
+
+    <p>
+        {% url 'do_test' as test_url %}
+        <a href="{{ test_url }}">TEST</a>
+    </p>
+
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block books_content %}
+
+    {% url "book_scrape_url" as book_scrape_url %}
+
+    <h1>Choose your book</h1>
+    {% for book in data %}
+        <form action="{{ book_scrape_url }}" method="post">
+            {% csrf_token %}
+            <input type="hidden" id="url" name="url" value="{{ book.url }}">
+            <img src="{{ book.img }}" alt="cover">
+            {{ book.name }}
+            <input type="submit" name="Get">
+        </form>
+    {% endfor %}
+
+{% endblock %}

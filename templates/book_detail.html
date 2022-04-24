@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block head_js %}
+    {{ block.super }}
+    <script>
+        function deleteBook() {
+            if (confirm('Are you sure you want to delete this?')) {
+                {% url "book_delete" object.pk as url %}
+                $("#dummy").load('{{ url }}');
+                window.location.replace("/");
+            }
+        }
+    </script>
+{% endblock %}
+
+{% block books_content %}
+
+    <div class="row">
+        <div class="col-md-2">
+            {% if object.cover %}
+                <br>
+                <img width="100%" src="{{ object.cover.url }}" alt="{{ object.title }}">
+            {% endif %}
+            {% url "book_scrape_isbn" object.isbn as url %}
+            <div class="pt-4"><button onclick="window.location.href='{{ url }}'" type="button" class="btn btn-info btn-block">Scrape book again</button></div>
+            {% url "book_update" object.pk as url %}
+            <div class="pt-4"><button onclick="window.location.href='{{ url }}'" type="button" class="btn btn-primary btn-block">Edit book</button></div>
+            {% url "book_delete" object.pk as url %}
+            <div class="pt-4"><button onclick="deleteBook()" type="button" class="btn btn-danger btn-block">Delete book</button></div>
+        </div>
+        <div class="col-md-10">
+            <br>
+            <h1>{{ object }}</h1>
+            {% if object.summary %}
+                <i>{{ object.summary }}</i>
+                <br><br>
+            {% endif %}
+            <table>
+                {% if object.isbn %}
+                    <tr>
+                        <td class="pt-2">ISBN:</td>
+                        <td class="pt-2">{{ object.formatted_isbn|safe }}</td>
+                    </tr>
+                {% endif %}
+                {% if object.category %}
+                    <tr class="pt-2">
+                        <td class="pt-2">Category:</td>
+                        <td class="pt-2">{{ object.category|capfirst }}</td>
+                    </tr>
+                {% endif %}
+
+                {% if object.publisher %}
+                    {% url 'publisher_detail' object.publisher.pk as publisher_url %}
+                    <tr class="pt-2">
+                        <td class="pt-2">Publisher:</td>
+                        <td class="pt-2"><a href="{{ publisher_url }}">{{ object.publisher.name }}</a></td>
+                    </tr>
+                {% endif %}
+
+                {% if object.authors %}
+                    {% for author in object.authors.all %}
+                        {% url 'author_detail' author.pk as author_url %}
+                        {% if forloop.first %}
+                            <tr>
+                                <td class="pt-2">Authors:</td>
+                                <td class="pt-2"><a href="{{ author_url }}">{{ author }}</a></td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td><a href="{{ author_url }}">{{ author }}</a></td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+                {% if object.serie %}
+                    {% url 'serie_detail' object.serie.pk as serie_url %}
+                    <tr class="pt-2">
+                        <td class="pt-2">Serie:</td>
+                        <td class="pt-2"><a href="{{ serie_url }}">{{ object.serie }}</a></td>
+                    </tr>
+                {% endif %}
+
+                {% if object.remarks %}
+                    <tr class="pt-2">
+                        <td class="pt-2">Remarks:</td>
+                        <td class="pt-2">{{ object.remarks }}</td>
+                    </tr>
+                {% endif %}
+
+                {% if object.sources %}
+                    <tr><td><br></td></tr>
+                    {% for source in object.sources.all %}
+                        <tr>
+                            {% if forloop.first %}
+                                <td>Scrape sources:</td>
+                            {% else %}
+                                <td>&nbsp;</td>
+                            {% endif %}
+                            <td><a href="{{ source }}" target="_blank">{{ source }}</a></td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+
+{% endblock %}

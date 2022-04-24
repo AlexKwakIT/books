@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+{% load static %}
+
+{% block bootstrap4_extra_head %}
+    {{ block.super }}
+
+    <style>
+        #my_camera{
+            width: 320px;
+            height: 240px;
+            border: 1px solid black;
+        }
+    </style>
+{% endblock %}
+
+{% block head_js %}
+    {{ block.super }}
+
+    <script type="text/javascript" src="{% static "js/webcam/webcam.min.js" %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.cookie.js' %}"></script>
+
+    <script>
+        $(document).ready(function () {
+            var csrftoken = $.cookie('csrftoken');
+
+             // preload shutter audio clip
+             var shutter = new Audio();
+             shutter.autoplay = true;
+             shutter.src = navigator.userAgent.match(/Firefox/) ? '{% static "js/webcam/shutter.ogg" %}' : '{% static "js/webcam/shutter.mp3" %}';
+
+            function take_snapshot() {
+                let base64 = "";
+
+                // play sound effect
+                shutter.play();
+
+                // take snapshot and get image data
+                Webcam.snap( function(data_uri) {
+                    // display results in page
+                    base64 = data_uri;
+                    document.getElementById('results').innerHTML = '<img src="'+data_uri+'"/>';
+                } );
+                Webcam.reset();
+                return base64;
+            }
+
+            function saveSnap() {
+                // Get base64 value from <img id='imageprev'> source
+                var base64image = document.getElementById("imageprev").src;
+
+                Webcam.upload(base64image, 'upload.php', function (code, text) {
+                    console.log('Save successfully');
+                    //console.log(text);
+                })
+            }
+
+            Webcam.set({
+                width: 640,
+                height: 480,
+                image_format: 'jpeg',
+                jpeg_quality: 90
+            });
+            Webcam.attach('#my_camera');
+
+            $("#snapshot").click(function(){
+                let base64 = take_snapshot();
+                export_ocr(base64);
+            });
+
+            function export_ocr(base64image) {
+                {#var base64image = document.getElementById("imageprev").src;#}
+                {#console.log(base64image);#}
+                $.ajax("/use-ocr/", {
+                    type : 'POST',
+                    contentType : 'application/json',
+                    data : base64image,
+                    success: function () {
+                        alert("Saved!");
+                    }
+                })
+
+                {#$("#dummy").load("/use-ocr/", {"image": base64image}, function() { });#}
+            }
+
+            function csrfSafeMethod(method) {
+               // these HTTP methods do not require CSRF protection
+                return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+            }
+
+            $.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+
+            {#$.ajax("/use-ocr/", {#}
+            {#    type : 'POST',#}
+            {#    contentType : 'application/json',#}
+            {#    data : JSON.stringify(canvas),#}
+            {#    success: function () {#}
+            {#        alert("Saved!");#}
+            {#    }#}
+            {#})#}
+
+        });
+
+
+    </script>
+
+{% endblock %}
+
+{% block books_content %}
+    <h1>Add book by name or cover image</h1>
+    <form action="" method="post" class="form" enctype='multipart/form-data'>
+      {% csrf_token %}
+      {% bootstrap_form form %}
+      {% buttons %}
+        <button type="submit" class="btn btn-primary">
+          Submit
+        </button>
+      {% endbuttons %}
+    </form>
+
+    <br><p><hr></p><br>
+
+    <div id="my_camera"></div>
+    <input id="snapshot" type=button value="Take Snapshot">
+
+    <div id="results" ></div>
+
+{% endblock %}

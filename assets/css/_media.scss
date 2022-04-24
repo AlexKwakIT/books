@@ -1,0 +1,34 @@
+// Bootstrap screen sizes - there is no min size for xs because that is the default
+// These values should match the settings in the Bootstrap3 less file
+$screen-xs-max: 767px;
+$screen-sm-min: 768px;
+$screen-md-min: 992px;
+$screen-lg-min: 1200px;
+
+$container-xs-width: auto;
+$container-sm-width: 750px;
+$container-md-width: 970px;
+$container-lg-width: 1170px;
+
+// Source: https://medium.com/developing-with-sass/creating-a-dead-simple-sass-mixin-to-handle-responsive-breakpoints-889927b37740
+@mixin breakpoint($class) {
+  @if $class == xs {
+    @media (max-width: $screen-xs-max) {
+      @content;
+    }
+  } @else if $class == sm {
+    @media (min-width: $screen-sm-min) {
+      @content;
+    }
+  } @else if $class == md {
+    @media (min-width: $screen-md-min) {
+      @content;
+    }
+  } @else if $class == lg {
+    @media (min-width: $screen-lg-min) {
+      @content;
+    }
+  } @else {
+    @warn "Breakpoint mixin supports: xs, sm, md, lg";
+  }
+}
