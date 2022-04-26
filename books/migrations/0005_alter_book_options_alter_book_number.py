@@ -2,8 +2,8 @@
 
 from django.db import migrations, models
 
-
 NUMBERS = []
+
 
 def get_number(apps, schema_editor):
     Book = apps.get_model('books', 'Book')
@@ -23,7 +23,6 @@ def fill_number(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('books', '0004_book_number'),
     ]

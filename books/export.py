@@ -16,7 +16,8 @@ def export_json(request):
         books.append(
             {
                 "id": book.pk,
-                "title": book.combined_title.replace("'", "\'").replace("   ", "  ").replace("  ", " ") if book.combined_title else "",
+                "title": book.combined_title.replace("'", "\'").replace("   ", "  ").replace("  ",
+                                                                                             " ") if book.combined_title else "",
                 "isbn": format_isbn(book.isbn).replace("&#8209;", "-") if book.isbn else "",
                 "summary": book.summary.replace("'", "\'") if book.summary else "",
                 "remarks": book.remarks.replace("'", "\'") if book.remarks else "",

@@ -12,6 +12,13 @@
                 <li><a href="{{ book_url }}">{{ book }}</a></li>
             {% endfor %}
             </ul>
+        <p><br><br></p>
+            <h4>ISBN prefixes:</h4>
+            <ul>
+                {% for prefix in object.prefixes.all %}
+                    <li>{{ prefix.prefix }}</li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
 

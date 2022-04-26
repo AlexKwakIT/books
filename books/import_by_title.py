@@ -5,25 +5,17 @@ from django.shortcuts import redirect
 from django.urls import reverse
 
 from books.import_isbn import add_book
-from books.ocr import OCR_API, Language
+from books.maintenance import get_publisher_by_isbn
 
 
-def use_ocr(request):
-    image = request.body.decode()
-    api = OCR_API(api_key="K89662893388957", language=Language.English)
-    response_text = api.ocr_base64(image)
-    title = get_from_worldcat_text(response_text)
-    get_from_worldcat_text(title)
-
-
-def get_from_worldcat_text(text):
+def get_by_title(text):
     try:
         text = text.lower()
         valid_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
         index = 0
         while index < len(text):
             if text[index] not in valid_chars:
-                text = text[:index] + " " + text[index + 1 :]
+                text = text[:index] + " " + text[index + 1:]
             index += 1
         while "  " in text:
             text = text.replace("  ", " ")
@@ -50,26 +42,22 @@ def get_book_by_url(request):
         soup = BeautifulSoup(html, "html.parser")
 
         title = soup.find("h1", {"class": "title"}).text.strip()
-        cover_url = soup.find("img", {"class":"cover" }).attrs["src"]
+        cover_url = soup.find("img", {"class": "cover"}).attrs["src"]
         try:
             authors = (
                 soup.find("td", {"id": "bib-author-cell"})
-                .findChild("a")
-                .text.strip()
-                .split(" : ")
+                    .findChild("a")
+                    .text.strip()
+                    .split(" : ")
             )
         except:
             authors = None
         try:
-            publisher = soup.find("td", {"id": "bib-publisher-cell"}).text.strip()
-        except:
-            publisher = None
-        try:
             isbns = (
                 soup.find("tr", {"id": "details-standardno"})
-                .findChild("td")
-                .text.strip()
-                .split(" ")
+                    .findChild("td")
+                    .text.strip()
+                    .split(" ")
             )
             isbn = None
             for part in isbns:
@@ -77,6 +65,7 @@ def get_book_by_url(request):
                     isbn = part
         except:
             isbn = None
+        publisher = get_publisher_by_isbn(isbn)
         if title:
             book = add_book(
                 title=title,

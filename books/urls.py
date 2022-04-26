@@ -5,9 +5,9 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 
 from books.export import export_excel, export_json
+from books.import_by_title import get_book_by_url
 from books.import_isbn import import_isbn, show_import_status
-from books.import_text import use_ocr, get_book_by_url
-from books.maintenance import clean, do_test
+from books.maintenance import clean, get_publishers_by_isbn
 from books.views import (
     AuthorDetailView,
     AuthorListView,
@@ -15,7 +15,6 @@ from books.views import (
     BookDetailView,
     BookListView,
     BookUpdateView,
-    CoverOcrView,
     ImportView,
     book_delete,
     PublisherDetailView,
@@ -31,9 +30,11 @@ urlpatterns = [
 
     path("export-json/", export_json, name="export_json"),
     path("export-excel/", export_excel, name="export_excel"),
+
     path("import/", ImportView.as_view(), name="import"),
     path("import-status/", show_import_status, name="import_status"),
     path("import-isbn/", import_isbn, name="import_isbn"),
+
     path("books/add/isbn/<slug:isbn>/", import_isbn, name="book_add_isbn"),
     path("books/add/", book_add, name="book_add"),
     path("books/scrape/text/<slug:text>/", import_text, name="book_scrape_text"),
@@ -43,23 +44,23 @@ urlpatterns = [
     path("books/<pk>/update/", BookUpdateView.as_view(), name="book_update"),
     path("books/create/", BookCreateView.as_view(), name="book_create"),
     path("books/delete/<pk>/", book_delete, name="book_delete"),
+
     path("authors/", AuthorListView.as_view(), name="author_list"),
     path("authors/<pk>/", AuthorDetailView.as_view(), name="author_detail"),
+
     path("sub-categories/", SubCategoryListView.as_view(), name="sub_category_list"),
     path("sub-categories/<pk>/", SubCategoryDetailView.as_view(), name="sub_category_detail"),
+
     path("series/", SerieListView.as_view(), name="serie_list"),
     path("series/<pk>/", SerieDetailView.as_view(), name="serie_detail"),
+
     path("publishers/", PublisherListView.as_view(), name="publisher_list"),
     path("publishers/<pk>/", PublisherDetailView.as_view(), name="publisher_detail"),
-    path("cover-ocr/", CoverOcrView.as_view(), name="cover_ocr"),
-    path("use-ocr/", use_ocr, name="use_ocr"),
-    path("clean/", clean, name="clean"),
-    path("do-test/", do_test, name="do_test"),
 
     path("maintenance", TemplateView.as_view(template_name='maintenance.html'), name="maintenance"),
-
+    path("clean/", clean, name="clean"),
+    path("do-test/", get_publishers_by_isbn, name="do_test"),
 ]
-
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

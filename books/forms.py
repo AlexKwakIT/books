@@ -1,7 +1,7 @@
 from django import forms
 from django_select2 import forms as s2forms
 
-from .models import Book, CoverOCR
+from .models import Book
 
 
 class AuthorWidget(s2forms.ModelSelect2MultipleWidget):
@@ -38,9 +38,3 @@ class BookForm(forms.ModelForm):
             "sub_category": SubCategorieWidget,
             "publisher": PublisherWidget,
         }
-
-
-class CoverOcrForm(forms.ModelForm):
-    class Meta:
-        model = CoverOCR
-        fields = ["name", "image"]

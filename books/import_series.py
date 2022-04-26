@@ -21,8 +21,6 @@ def test(request):
     return HttpResponse(status=201, content="OK")
 
 
-
-
 def import_conny_coll(request):
     book_file = os.path.join(BASE_DIR, "assets\\conny_coll.txt")
     with open(book_file, "r") as file:

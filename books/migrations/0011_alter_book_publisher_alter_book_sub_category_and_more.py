@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('books', '0010_alter_book_publisher_alter_book_serie_and_more'),
     ]
@@ -14,22 +13,26 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='book',
             name='publisher',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='books', to='books.publisher'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='books', to='books.publisher'),
         ),
         migrations.AlterField(
             model_name='book',
             name='sub_category',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='books', to='books.subcategory'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='books', to='books.subcategory'),
         ),
         migrations.AlterField(
             model_name='coverocr',
             name='book',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='books.book'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='books.book'),
         ),
         migrations.AlterField(
             model_name='publisher',
             name='isbn_prefix',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='books.isbnprefix'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='books.isbnprefix'),
         ),
         migrations.AlterField(
             model_name='subcategory',

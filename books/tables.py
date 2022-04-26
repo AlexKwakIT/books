@@ -23,7 +23,6 @@ class BookTable(tables.Table):
         template_name = "django_tables2/bootstrap-responsive.html"
         fields = ("cover", "combined_title", "isbn", "publisher", "authors", "category", "serie")
 
-
     def render_authors(self, value, record):
         return mark_safe(record.author_list(True))
 

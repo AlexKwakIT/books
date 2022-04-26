@@ -11,12 +11,12 @@ from django.core.files import File
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 
+from books.maintenance import get_publisher_by_isbn
 from books.models import (
     Author,
     Book,
     Category,
     InfoSource,
-    Publisher,
     Serie,
     SubCategory,
 )
@@ -108,7 +108,6 @@ def get_from_openlibrary(category, isbn):
 
     try:
         data = get_json(f"isbn/{isbn}")
-        publisher = data["publishers"][0]
         if "title" in data:
             title = data["title"]
             summary = data["subtitle"] if "subtitle" in data else ""
@@ -128,7 +127,6 @@ def get_from_openlibrary(category, isbn):
                 title=title,
                 isbn=isbn,
                 summary=summary,
-                publisher=publisher,
                 category=category,
                 authors=authors,
                 source=f"https://openlibrary.org/isbn/{isbn}.json",
@@ -172,7 +170,7 @@ def get_from_worldcat_org(category, isbn):
         soup = BeautifulSoup(html, "html.parser")
         td_coverart = soup.find("td", {"class": "coverart"})
 
-        cover_img = soup.find("img", {"class":"cover" })
+        cover_img = soup.find("img", {"class": "cover"})
         cover_url = "https:" + cover_img.attrs["src"] if cover_img else None
 
         detail_url = td_coverart.findChild("a").attrs["href"]
@@ -197,10 +195,6 @@ def get_from_worldcat_org(category, isbn):
         except:
             authors = None
         try:
-            publisher = soup.find("td", {"id": "bib-publisher-cell"}).text.strip()
-        except:
-            publisher = None
-        try:
             summary = soup.find("div", {"class": "abstracttxt"}).text.strip()
         except:
             pass
@@ -211,7 +205,6 @@ def get_from_worldcat_org(category, isbn):
                 summary=summary,
                 isbn=isbn,
                 category=category,
-                publisher=publisher,
                 authors=authors,
                 source=url,
                 cover_url=cover_url,
@@ -250,14 +243,11 @@ def get_from_vindboek_nl(category, isbn):
             return None
         soup = BeautifulSoup(html, "html.parser")
         authors = []
-        publisher = None
         title = soup.find("h1").text.strip()
         if title and title != isbn:
             for dt in soup.find_all("dt"):
                 if dt.text.strip() == "Auteur:":
                     authors.append(dt.find_next_sibling().next.next.text.strip())
-                if dt.text.strip() == "Uitgever:":
-                    publisher = dt.find_next_sibling().next.next.text.strip()
                 cover_url = None
                 cover = soup.find("div", {"class": "col-md-4 col-6 m-auto"})
                 if cover:
@@ -267,7 +257,6 @@ def get_from_vindboek_nl(category, isbn):
             book = add_book(
                 title=title,
                 isbn=isbn,
-                publisher=publisher,
                 category=category,
                 authors=authors,
                 source=url,
@@ -280,28 +269,25 @@ def get_from_vindboek_nl(category, isbn):
 
 
 def add_book(
-    title,
-    isbn,
-    summary=None,
-    publisher=None,
-    authors=None,
-    serie=None,
-    category=None,
-    sub_category=None,
-    cover_url=None,
-    source=None,
+        title,
+        isbn,
+        summary=None,
+        authors=None,
+        serie=None,
+        category=None,
+        sub_category=None,
+        cover_url=None,
+        source=None,
 ):
     try:
         if isbn:
             book, _ = Book.objects.get_or_create(isbn=isbn)
+            book.publisher = get_publisher_by_isbn(isbn)
         else:
             book = Book()
         book.title = title
         if summary and len(summary) > 0:
             book.summary = summary
-        if publisher and len(publisher) > 0:
-            publisher, _ = Publisher.objects.get_or_create(name=publisher)
-            book.publisher = publisher
         if serie and len(serie) > 0:
             serie, _ = Serie.objects.get_or_create(name=serie)
             book.serie = serie

@@ -3,16 +3,9 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 
-from books.ocr import OCR_API, Language
-
-
-class IsbnPrefix(models.Model):
-    prefix = models.CharField(max_length=20, blank=True, null=True)
-
 
 class Publisher(models.Model):
     name = models.CharField(max_length=100, blank=False, null=False)
-    isbn_prefix = models.ForeignKey(IsbnPrefix, on_delete=models.SET_NULL, blank=True, null=True)
 
     class Meta:
         ordering = ["name"]
@@ -23,6 +16,14 @@ class Publisher(models.Model):
     @property
     def number_of_books(self):
         return self.books.count()
+
+
+class IsbnPrefix(models.Model):
+    prefix = models.CharField(max_length=20, blank=True, null=True)
+    prefix_stripped = models.CharField(max_length=20, blank=True, null=True)
+    publisher = models.ForeignKey(
+        Publisher, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="prefixes"
+    )
 
 
 class Author(models.Model):
@@ -158,35 +159,11 @@ class Book(models.Model):
 
     @property
     def formatted_isbn(self):
+        from books.maintenance import format_isbn
         return format_isbn(self.isbn)
 
     def save(self, *args, **kwargs):
         super(Book, self).save(*args, **kwargs)
-
-
-class CoverOCR(models.Model):
-    name = models.CharField(null=True, blank=True, max_length=100)
-    image = models.ImageField(blank=True, null=True, upload_to="temp/")
-    book = models.ForeignKey(Book, blank=True, null=True, on_delete=models.SET_NULL)
-
-    def save(self, *args, **kwargs):
-        if self.name and len(self.name) > 0:
-            text = self.name
-        else:
-            api = OCR_API(api_key="K89662893388957", language=Language.Dutch)
-            text = api.ocr_file(self.image)
-        from books.import_text import get_from_worldcat_text
-
-        title = get_from_worldcat_text(text)
-        if title is not None:
-            self.book = Book.objects.order_by("pk").last()
-        super(CoverOCR, self).save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        if self.book:
-            return reverse("book_detail", kwargs={"pk": self.book.pk})
-        else:
-            return reverse("book_list")
 
 
 def get_combined_title(book):
@@ -197,7 +174,7 @@ def get_combined_title(book):
             if book.serie:
                 title = f'"{title}' if len(title) > 0 else ""
                 return f'{book.serie.name} {number} {title}'
-            return f"{number} {title}"
+            return f"{title} ({number})"
         return title
     except:
         return title

@@ -10,8 +10,8 @@ from django_filters.views import FilterView
 from django_tables2.views import SingleTableMixin
 
 from books.filters import BookFilter, AuthorFilter, SerieFilter, SubCategoryFilter, PublisherFilter
-from books.forms import BookForm, CoverOcrForm
-from books.models import Author, Book, CoverOCR, Publisher, SubCategory, Serie
+from books.forms import BookForm
+from books.models import Author, Book, Publisher, SubCategory, Serie
 from books.tables import (
     AuthorTable,
     BookTable,
@@ -35,7 +35,6 @@ class BookListView(SingleTableMixin, FilterView):
 
     def get_queryset(self):
         return Book.objects.order_by("combined_title")
-
 
 
 class BookDetailView(DetailView):
@@ -141,12 +140,6 @@ class BookUpdateView(UpdateView):
     exclude = "source"
 
 
-class CoverOcrView(CreateView):
-    model = CoverOCR
-    template_name = "cover_ocr.html"
-    form_class = CoverOcrForm
-
-
 def book_delete(request, pk):
     book = Book.objects.filter(pk=pk).first()
     if book:
@@ -179,5 +172,3 @@ def import_text(request, text):
             }
         )
     return render(request, 'book_choose.html', context={"data": data})
-
-

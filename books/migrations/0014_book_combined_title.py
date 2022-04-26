@@ -17,7 +17,6 @@ def fill_combined_title(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('books', '0013_alter_book_title'),
     ]
