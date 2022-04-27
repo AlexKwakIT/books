@@ -6,8 +6,7 @@ from datetime import datetime
 import xlsxwriter
 from django.http import FileResponse
 
-from books.maintenance import format_isbn
-from books.models import Book, SubCategory, Serie, Author
+from books.models import Book, SubCategory, Serie, Author, format_isbn
 
 
 def export_json(request):

@@ -1,36 +1,33 @@
 import urllib
 
 from bs4 import BeautifulSoup
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from books.import_isbn import add_book
-from books.maintenance import get_publisher_by_isbn
 
 
-def get_by_title(text):
-    try:
-        text = text.lower()
-        valid_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
-        index = 0
-        while index < len(text):
-            if text[index] not in valid_chars:
-                text = text[:index] + " " + text[index + 1:]
-            index += 1
-        while "  " in text:
-            text = text.replace("  ", " ")
-        text = text.strip().replace(" ", "%20")
+def import_text(request, text):
+    valid_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+    for index in range(0, len(text)):
+        if text[index] not in valid_chars:
+            text = text[:index] + "+" + text[index + 1:]
 
-        url = f"https://www.worldcat.org/search?qt=worldcat_org_all&q={text}"
-        html = urllib.request.urlopen(url).read()
-        soup = BeautifulSoup(html, "html.parser")
+    url = f"https://www.worldcat.org/search?qt=worldcat_org_all&q={text}&qt=results_page#%2528x0%253Abook%2Bx4%253Aprintbook%2529format"
+    html = urllib.request.urlopen(url).read()
+    soup = BeautifulSoup(html, "html.parser")
 
-        url = soup.find("td", {"class": "coverart"}).findChild("a").attrs["href"]
-        get_book_by_url(None, url)
-    except Exception as e:
-        print(f"get_from_openlibrary: {e}")
-        return None
-    return None
+    data = []
+    for tr in soup.find_all("tr", {"class": "menuElem"}):
+        cover_art = tr.findChild("td", {"class", "coverart"})
+        data.append(
+            {
+                "name": cover_art.findChild("a").findChild("img").attrs["title"],
+                "img": cover_art.findChild("a").findChild("img").attrs["src"],
+                "url": cover_art.findChild("a").attrs["href"]
+            }
+        )
+    return render(request, 'book_choose.html', context={"data": data})
 
 
 def get_book_by_url(request):
@@ -65,12 +62,10 @@ def get_book_by_url(request):
                     isbn = part
         except:
             isbn = None
-        publisher = get_publisher_by_isbn(isbn)
         if title:
             book = add_book(
                 title=title,
                 isbn=isbn,
-                publisher=publisher,
                 authors=authors,
                 source=f"https://www.worldcat.org/{url}",
                 cover_url=f"https:{cover_url}"

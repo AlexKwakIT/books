@@ -1,10 +1,11 @@
 import django_filters
+from django.forms import TextInput
 
 from books.models import Book, Author, SubCategory, Serie, Publisher
 
 
 class BookFilter(django_filters.FilterSet):
-    combined_title = django_filters.CharFilter(lookup_expr="icontains")
+    combined_title = django_filters.CharFilter(lookup_expr="icontains", widget=TextInput(attrs={'placeholder': 'Title contains'}))
 
     class Meta:
         model = Book

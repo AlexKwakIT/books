@@ -31,7 +31,7 @@ class SubCategorieWidget(s2forms.ModelSelect2Widget):
 class BookForm(forms.ModelForm):
     class Meta:
         model = Book
-        exclude = ("sources",)
+        exclude = ("sources", "combined_title",)
         widgets = {
             "authors": AuthorWidget,
             "serie": SerieWidget,

@@ -7,118 +7,7 @@ from os.path import isfile, join
 from django.conf import settings
 from django.http import StreamingHttpResponse, HttpResponse
 
-from books.models import Author, Publisher, Book, get_combined_title, IsbnPrefix
-
-
-# ISBN_978_LANGUAGE_RANGES = [
-#     ['0', '5'],
-#     ['7', '7'],
-#     ['80', '94'],
-#     ['600', '649'],
-#     ['950', '989'],
-#     ['9900', '9989'],
-#     ['99900', '99999'],
-# ]
-#
-# ISBN_PUBLISHER_RANGES = [
-#     ['00', '02'],
-#     ['04', '06'],
-#     ['000', '009'],
-#     ['030', '034'],
-#     ['100', '397'],
-#     ['714', '716'],
-#     ['0350', '0399'],
-#     ['0700', '0999'],
-#     ['3980', '5499'],
-#     ['6500', '6799'],
-#     ['6860', '7139'],
-#     ['7170', '7319'],
-#     ['7900', '7999'],
-#     ['8672', '8675'],
-#     ['9730', '9877'],
-#     ['55000', '64999'],
-#     ['68000', '68599'],
-#     ['74000', '77499'],
-#     ['77540', '77639'],
-#     ['77650', '77699'],
-#     ['77830', '78999'],
-#     ['80000', '83799'],
-#     ['83850', '86719'],
-#     ['86760', '86979'],
-#     ['869800', '915999'],
-#     ['916506', '916869'],
-#     ['916908', '919599'],
-#     ['919655', '972999'],
-#     ['987800', '991149'],
-#     ['991200', '998989'],
-#     ['7320000', '7399999'],
-#     ['7750000', '7753999'],
-#     ['7764000', '7764999'],
-#     ['7770000', '7782999'],
-#     ['8380000', '8384999'],
-#     ['9160000', '9165059'],
-#     ['9168700', '9169079'],
-#     ['9196000', '9196549'],
-#     ['9911500', '9911999'],
-#     ['9989900', '9999999']
-# ]
-
-
-# def get_isbn_parts(isbn_code):
-#     isbn = isbn_code.replace("-", "").replace("&#8209;", "")
-#     if len(isbn) != 13:
-#         return None, None, None, None, None
-#
-#     isbn_prefix_element = isbn[0:3]
-#     isbn_language_element = ""
-#     isbn_registrant_element = ""
-#     isbn_publication_element = ""
-#     index = 3
-#     if isbn_prefix_element == '979':
-#         if isbn[index] == "8":
-#             isbn_language_element = isbn[index]
-#             index += 1
-#         if isbn[index:index + 2] in ("10", "11", "12"):
-#             isbn_language_element = isbn[index]
-#             index += 2
-#         else:
-#             print(f"Unknown language for {isbn}")
-#             return isbn
-#     elif isbn_prefix_element == '978':
-#         found = False
-#         for start, end in ISBN_978_LANGUAGE_RANGES:
-#             l = len(start)
-#             if start <= isbn[index:index + l] <= end:
-#                 isbn_language_element = isbn[index:index + l]
-#                 index += l
-#                 found = True
-#                 break
-#         if not found:
-#             print(f"Unknown language for {isbn}")
-#             return isbn
-#
-#     found = False
-#     for start, end in ISBN_PUBLISHER_RANGES:
-#         l = len(start)
-#         if start <= isbn[index:index + l] <= end:
-#             isbn_registrant_element = isbn[index:index + l]
-#             isbn_publication_element = isbn[index + l:12]
-#             found = True
-#             break
-#     if not found:
-#         print(f"Unknown registrant for {isbn}")
-#         return isbn
-#
-#     isbn_checksum = isbn[12]
-#     return isbn_prefix_element, isbn_language_element, isbn_registrant_element, isbn_publication_element, isbn_checksum
-
-
-def format_isbn(isbn_code):
-    isbn = isbn_code.replace("-", "").replace("&#8209;", "")
-    for isbn_prefix in IsbnPrefix.objects.all():
-        if isbn.startswith(isbn_prefix.prefix_stripped):
-            return isbn_prefix.prefix + "-" + isbn[len(isbn_prefix.prefix_stripped):12] + "-" + isbn[12]
-    return isbn_code.replace("-", "&#8209;")
+from books.models import Author, Publisher, Book, get_combined_title, IsbnPrefix, format_isbn
 
 
 def cleaning():
@@ -191,7 +80,7 @@ def get_publisher_by_isbn(isbn):
     isbn = isbn.replace("-", "").replace("&#8209;", "")
     for isbn_prefix in IsbnPrefix.objects.all():
         if isbn.startswith(isbn_prefix.prefix_stripped):
-            return isbn_prefix.publisher, isbn_prefix.prefix
+            return isbn_prefix.publisher
     end = 12
     while end >= 5:
         publisher_name, isbn_prefixes = get_publisher_from_prefix(isbn[0:end])

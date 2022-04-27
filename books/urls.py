@@ -5,7 +5,7 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 
 from books.export import export_excel, export_json
-from books.import_by_title import get_book_by_url
+from books.import_by_title import get_book_by_url, import_text
 from books.import_isbn import import_isbn, show_import_status
 from books.maintenance import clean, get_publishers_by_isbn
 from books.views import (
@@ -20,7 +20,7 @@ from books.views import (
     PublisherDetailView,
     PublisherListView,
     SerieListView,
-    SerieDetailView, SubCategoryListView, SubCategoryDetailView, book_add, import_text,
+    SerieDetailView, SubCategoryListView, SubCategoryDetailView, book_add
 )
 
 urlpatterns = [
@@ -37,9 +37,9 @@ urlpatterns = [
 
     path("books/add/isbn/<slug:isbn>/", import_isbn, name="book_add_isbn"),
     path("books/add/", book_add, name="book_add"),
-    path("books/scrape/text/<slug:text>/", import_text, name="book_scrape_text"),
     path("books/detail/<pk>/", BookDetailView.as_view(), name="book_detail"),
     path("books/scrape/isbn/<slug:isbn>/", import_isbn, name="book_scrape_isbn"),
+    path("books/scrape/text/<slug:text>/", import_text, name="book_scrape_text"),
     path("books/scrape/url/", get_book_by_url, name="book_scrape_url"),
     path("books/<pk>/update/", BookUpdateView.as_view(), name="book_update"),
     path("books/create/", BookCreateView.as_view(), name="book_create"),

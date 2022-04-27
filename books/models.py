@@ -159,11 +159,15 @@ class Book(models.Model):
 
     @property
     def formatted_isbn(self):
-        from books.maintenance import format_isbn
         return format_isbn(self.isbn)
 
-    def save(self, *args, **kwargs):
-        super(Book, self).save(*args, **kwargs)
+
+def format_isbn(isbn_code):
+    isbn = isbn_code.replace("-", "").replace("&#8209;", "")
+    for isbn_prefix in IsbnPrefix.objects.all():
+        if isbn.startswith(isbn_prefix.prefix_stripped):
+            return isbn_prefix.prefix + "-" + isbn[len(isbn_prefix.prefix_stripped):12] + "-" + isbn[12]
+    return isbn_code.replace("-", "&#8209;")
 
 
 def get_combined_title(book):
@@ -172,8 +176,8 @@ def get_combined_title(book):
         if book.number and book.number != '':
             number = '{:3d}'.format(book.number)
             if book.serie:
-                title = f'"{title}' if len(title) > 0 else ""
-                return f'{book.serie.name} {number} {title}'
+                title = f' "{title}"' if len(title) > 0 else ""
+                return f'{book.serie.name} {number}{title}'
             return f"{title} ({number})"
         return title
     except:

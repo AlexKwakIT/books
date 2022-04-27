@@ -15,8 +15,12 @@ class BookTable(tables.Table):
         verbose_name="Publisher",
     )
     authors = tables.Column(empty_values=(), orderable=False)
-    category = tables.Column(accessor="sub_category", verbose_name="Category")
-    serie = tables.Column()
+    category = tables.LinkColumn("sub_category_detail", args=[A("sub_category_id")], accessor="sub_category", verbose_name="Category")
+    serie = tables.LinkColumn(
+        "serie_detail",
+        args=[A("serie_id")],
+        verbose_name="Serie",
+    )
 
     class Meta:
         model = Book
