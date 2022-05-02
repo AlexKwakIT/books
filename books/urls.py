@@ -7,7 +7,7 @@ from django.views.generic import TemplateView
 from books.export import export_excel, export_json
 from books.import_by_title import get_book_by_url, import_text
 from books.import_isbn import import_isbn, show_import_status
-from books.maintenance import clean, get_publishers_by_isbn
+from books.maintenance import clean, get_genres
 from books.views import (
     AuthorDetailView,
     AuthorListView,
@@ -19,8 +19,8 @@ from books.views import (
     book_delete,
     PublisherDetailView,
     PublisherListView,
-    SerieListView,
-    SerieDetailView, SubCategoryListView, SubCategoryDetailView, book_add
+    SeriesListView,
+    SerieDetailView, GenreListView, GenreDetailView, WishListView, WishCreateView
 )
 
 urlpatterns = [
@@ -36,7 +36,6 @@ urlpatterns = [
     path("import-isbn/", import_isbn, name="import_isbn"),
 
     path("books/add/isbn/<slug:isbn>/", import_isbn, name="book_add_isbn"),
-    path("books/add/", book_add, name="book_add"),
     path("books/detail/<pk>/", BookDetailView.as_view(), name="book_detail"),
     path("books/scrape/isbn/<slug:isbn>/", import_isbn, name="book_scrape_isbn"),
     path("books/scrape/text/<slug:text>/", import_text, name="book_scrape_text"),
@@ -45,21 +44,24 @@ urlpatterns = [
     path("books/create/", BookCreateView.as_view(), name="book_create"),
     path("books/delete/<pk>/", book_delete, name="book_delete"),
 
+    path("wish/create/", WishCreateView.as_view(), name="wish_create"),
+    path("wish/list/", WishListView.as_view(), name="wish_list"),
+
     path("authors/", AuthorListView.as_view(), name="author_list"),
     path("authors/<pk>/", AuthorDetailView.as_view(), name="author_detail"),
 
-    path("sub-categories/", SubCategoryListView.as_view(), name="sub_category_list"),
-    path("sub-categories/<pk>/", SubCategoryDetailView.as_view(), name="sub_category_detail"),
+    path("genres/", GenreListView.as_view(), name="genre_list"),
+    path("genres/<pk>/", GenreDetailView.as_view(), name="genre_detail"),
 
-    path("series/", SerieListView.as_view(), name="serie_list"),
-    path("series/<pk>/", SerieDetailView.as_view(), name="serie_detail"),
+    path("series/", SeriesListView.as_view(), name="series_list"),
+    path("series/<pk>/", SerieDetailView.as_view(), name="series_detail"),
 
     path("publishers/", PublisherListView.as_view(), name="publisher_list"),
     path("publishers/<pk>/", PublisherDetailView.as_view(), name="publisher_detail"),
 
     path("maintenance", TemplateView.as_view(template_name='maintenance.html'), name="maintenance"),
     path("clean/", clean, name="clean"),
-    path("do-test/", get_publishers_by_isbn, name="do_test"),
+    path("do-test/", get_genres, name="do_test"),
 ]
 
 if settings.DEBUG:

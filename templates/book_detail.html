@@ -42,11 +42,21 @@
                         <td class="pt-2">{{ object.formatted_isbn|safe }}</td>
                     </tr>
                 {% endif %}
-                {% if object.category %}
-                    <tr class="pt-2">
-                        <td class="pt-2">Category:</td>
-                        <td class="pt-2">{{ object.category|capfirst }}</td>
-                    </tr>
+                {% if object.genres %}
+                    {% for genre in object.genres.all %}
+                        {% url 'genre_detail' genre.pk as genre_url %}
+                        {% if forloop.first %}
+                            <tr>
+                                <td class="pt-2">Genres:</td>
+                                <td class="pt-2"><a href="{{ genre_url }}">{{ genre }}</a></td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td><a href="{{ genre_url }}">{{ genre }}</a></td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
                 {% endif %}
 
                 {% if object.publisher %}
@@ -74,11 +84,11 @@
                     {% endfor %}
                 {% endif %}
 
-                {% if object.serie %}
-                    {% url 'serie_detail' object.serie.pk as serie_url %}
+                {% if object.series %}
+                    {% url 'series_detail' object.series.pk as series_url %}
                     <tr class="pt-2">
-                        <td class="pt-2">Serie:</td>
-                        <td class="pt-2"><a href="{{ serie_url }}">{{ object.serie }}</a></td>
+                        <td class="pt-2">Series:</td>
+                        <td class="pt-2"><a href="{{ series_url }}">{{ object.series }}</a></td>
                     </tr>
                 {% endif %}
 
@@ -89,19 +99,6 @@
                     </tr>
                 {% endif %}
 
-                {% if object.sources %}
-                    <tr><td><br></td></tr>
-                    {% for source in object.sources.all %}
-                        <tr>
-                            {% if forloop.first %}
-                                <td>Scrape sources:</td>
-                            {% else %}
-                                <td>&nbsp;</td>
-                            {% endif %}
-                            <td><a href="{{ source }}" target="_blank">{{ source }}</a></td>
-                        </tr>
-                    {% endfor %}
-                {% endif %}
             </table>
         </div>
     </div>

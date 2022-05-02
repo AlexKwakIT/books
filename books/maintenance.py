@@ -4,10 +4,11 @@ import urllib
 from os import listdir
 from os.path import isfile, join
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.http import StreamingHttpResponse, HttpResponse
 
-from books.models import Author, Publisher, Book, get_combined_title, IsbnPrefix, format_isbn
+from books.models import Author, Publisher, Book, get_combined_title, IsbnPrefix, format_isbn, Genre
 
 
 def cleaning():
@@ -110,3 +111,60 @@ def get_publisher_from_prefix(isbn_prefix):
     except Exception as e:
         return None, None
     return None, None
+
+
+def fix_genres(request):
+    ids = []
+    for genre in Genre.objects.all():
+        ids.append(genre.pk)
+    for id in ids:
+        genre = Genre.objects.filter(pk=id).first()
+        if genre:
+            for sub in Genre.objects.exclude(pk=genre.pk).filter(name=genre.name).all():
+                for book in sub.books.all():
+                    book.genres.remove(sub)
+                    book.genres.add(genre)
+                Genre.objects.filter(pk=sub.pk).delete()
+
+    return HttpResponse(status=200, content="OK")
+
+
+def get_genres(request):
+    for book in Book.objects.filter(isbn__isnull=False, genres__isnull=True):
+        get_genres_by_isbn(book)
+    return HttpResponse(status=200, content="OK")
+
+
+def get_genres_by_isbn(book):
+    soup = get_genre_by_isbn(book, f'http://classify.oclc.org/classify2/ClassifyDemo?search-standnum-txt={book.isbn}&startRec=0')
+    if soup:
+        table = soup.find("table", {"id": "results-table"})
+        if table is not None:
+            tbody = table.find("tbody")
+            trs = tbody.find_all("tr")
+            for tr in trs:
+                tds = tr.find_all("td")
+                td = tds[0]
+                span = td.find("span")
+                a = span.find("a")
+                href = a.attrs['href']
+                url = f'http://classify.oclc.org{href}'
+                get_genre_by_isbn(book, url)
+
+
+def get_genre_by_isbn(book, url):
+    html = urllib.request.urlopen(url).read()
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", {"id": "subheadtbl"})
+    if table is not None:
+        tbody = table.find("tbody")
+        trs = tbody.find_all("tr")
+        for tr in trs:
+            tds = tr.find_all("td")
+            td = tds[0]
+            cat = td.text
+            print(cat)
+            genre, _ = Genre.objects.get_or_create(name=cat)
+            book.genres.add(genre)
+        return None
+    return soup

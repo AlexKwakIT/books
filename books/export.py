@@ -6,7 +6,7 @@ from datetime import datetime
 import xlsxwriter
 from django.http import FileResponse
 
-from books.models import Book, SubCategory, Serie, Author, format_isbn
+from books.models import Book, Genre, Series, Author, format_isbn, Wish
 
 
 def export_json(request):
@@ -22,14 +22,25 @@ def export_json(request):
                 "remarks": book.remarks.replace("'", "\'") if book.remarks else "",
                 "authors": [author.name.replace("'", "\'") for author in book.authors.all()],
                 "publisher": book.publisher.name.replace("'", "\'") if book.publisher else "",
-                "serie": book.serie.name.replace("'", "\'") if book.serie else "",
+                "series": book.series.name.replace("'", "\'") if book.series else "",
                 "number": book.number or "",
-                "category": book.sub_category.extended_name.replace("'", "\'") if book.sub_category else ""
+                "genres": [genre.name.replace("'", "\'") for genre in book.genres.all()]
+            }
+        )
+    wishes = []
+    for wish in Wish.objects.all():
+        wishes.append(
+            {
+                "id": wish.pk,
+                "author": wish.author if wish.author else "",
+                "title": wish.title if wish.title else "",
+                "remarks": wish.remarks if wish.remarks else ""
             }
         )
     data = {
         "date": date.today().strftime("%Y-%m-%d"),
-        "books": books
+        "books": books,
+        "wishes": wishes
     }
     books = json.dumps(data)
 
@@ -45,8 +56,6 @@ def export_json(request):
 def export_excel(request):
     ts = datetime.utcnow().strftime('%Y-%m-%d %H-%M')
     filename = f'my_books_{ts}.xlsx'
-    comics = SubCategory.objects.get(category__name="Comics", name="")
-
     buffer = io.BytesIO()
     workbook = xlsxwriter.Workbook(buffer)
 
@@ -61,7 +70,7 @@ def export_excel(request):
     worksheet_by_title.write('A1', 'Books by title', header_format)
     worksheet_by_title.name = "Title"
     index = 2
-    for book in Book.objects.exclude(sub_category=comics).order_by("title"):
+    for book in Book.objects.exclude(genre__name="Comics").order_by("title"):
         index += 1
         worksheet_by_title.write(f'A{index}', book.title)
 
@@ -71,23 +80,23 @@ def export_excel(request):
     worksheet_comics.name = "Comics"
     index = 1
 
-    if Book.objects.filter(serie__isnull=True, sub_category=comics).exists():
-        for book in Book.objects.filter(sub_category=comics, serie__isnull=True).order_by("title"):
+    if Book.objects.filter(series__isnull=True, genre__name="Comics").exists():
+        for book in Book.objects.filter(genre__name="Comics", series__isnull=True).order_by("title"):
             index += 2
             if book.number:
                 worksheet_comics.write(f'A{index}', f"{book.number} {book.title}")
             else:
                 worksheet_comics.write(f'A{index}', f"{book.title}")
 
-    for serie in Serie.objects.all():
-        if not Book.objects.filter(serie=serie, sub_category=comics).exists():
+    for series in Series.objects.all():
+        if not Book.objects.filter(series=series, genre__name="Comics").exists():
             continue
 
         index += 2
         worksheet_comics.set_row(index, 20)
-        worksheet_comics.write(f'A{index}', serie.name, subheader_format)
+        worksheet_comics.write(f'A{index}', series.name, subheader_format)
 
-        for book in Book.objects.filter(sub_category=comics, serie=serie).order_by("serie", "number", "title"):
+        for book in Book.objects.filter(genre__name="Comics", series=series).order_by("series", "number", "title"):
             index += 1
             if book.number:
                 worksheet_comics.write(f'A{index}', f"{book.number} {book.title}")
@@ -112,15 +121,15 @@ def export_excel(request):
     worksheet_serie = workbook.add_worksheet()
     worksheet_serie.set_row(0, 24)
     worksheet_serie.write('A1', 'Series', header_format)
-    worksheet_serie.name = "by Serie"
+    worksheet_serie.name = "by Series"
     index = 1
 
-    for serie in Serie.objects.all():
+    for series in Series.objects.all():
         index += 2
         worksheet_serie.set_row(index, 20)
-        worksheet_serie.write(f'A{index}', serie.name, subheader_format)
+        worksheet_serie.write(f'A{index}', series.name, subheader_format)
 
-        for book in serie.books.all():
+        for book in series.books.all():
             index += 1
             if book.number:
                 worksheet_serie.write(f'A{index}', f"{book.number} {book.title}")

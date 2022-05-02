@@ -1,7 +1,7 @@
 import django_filters
 from django.forms import TextInput
 
-from books.models import Book, Author, SubCategory, Serie, Publisher
+from books.models import Book, Author, Genre, Series, Publisher
 
 
 class BookFilter(django_filters.FilterSet):
@@ -20,19 +20,19 @@ class AuthorFilter(django_filters.FilterSet):
         fields = ["name"]
 
 
-class SubCategoryFilter(django_filters.FilterSet):
+class GenreFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_expr="icontains")
 
     class Meta:
-        model = SubCategory
+        model = Genre
         fields = ["name"]
 
 
-class SerieFilter(django_filters.FilterSet):
+class SeriesFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_expr="icontains")
 
     class Meta:
-        model = Serie
+        model = Series
         fields = ["name"]
 
 

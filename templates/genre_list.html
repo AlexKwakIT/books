@@ -7,7 +7,7 @@
 
     <div class="row">
         <div class="col-md-12">
-            <h1>Serie list</h1>
+            <h1>Genre list</h1>
 
             {% if filter %}
                 <form action="" method="get" class="form form-inline">
@@ -15,7 +15,7 @@
                     {% bootstrap_button 'filter' %}
                 </form>
             {% endif %}
-            {% render_table table 'django_tables2/bootstrap.html' %}
+            {% render_table table 'django_tables2/bootstrap4.html' %}
 
         </div>
     </div>

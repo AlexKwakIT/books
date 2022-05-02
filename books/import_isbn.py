@@ -1,7 +1,6 @@
 import copy
 import datetime
 import json
-import os
 import urllib
 from tempfile import NamedTemporaryFile
 
@@ -11,16 +10,13 @@ from django.core.files import File
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 
-from books.maintenance import get_publisher_by_isbn
+from books.maintenance import get_publisher_by_isbn, get_genres_by_isbn
 from books.models import (
     Author,
     Book,
-    Category,
-    InfoSource,
-    Serie,
-    SubCategory,
+    Series,
+    Genre,
 )
-from books.settings import BASE_DIR
 
 PROGRESS = []
 SOURCES = [
@@ -32,49 +28,31 @@ SOURCES = [
 ]
 
 
-def import_isbn(request, isbn=None):
-    PROGRESS.clear()
-    if isbn:
-        if len(isbn) == 10:
-            isbn = "978" + isbn[:9]
-            sum = 0
-            for i in range(0, 12):
-                f = 1 if i % 2 == 0 else 3
-                sum += f * int(isbn[i])
-            mod = sum % 10
-            if mod == 0:
-                isbn += '0'
-            else:
-                isbn += str(10 - int(mod))
-        book = get_book("", isbn)
-        if book:
-            return HttpResponseRedirect(reverse("book_detail", kwargs={"pk": book.pk}))
+def import_isbn(request, isbn):
+    if len(isbn) == 10:
+        isbn = "978" + isbn[:9]
+        sum = 0
+        for i in range(0, 12):
+            f = 1 if i % 2 == 0 else 3
+            sum += f * int(isbn[i])
+        mod = sum % 10
+        if mod == 0:
+            isbn += '0'
         else:
-            return HttpResponseRedirect(reverse("book_list"))
+            isbn += str(10 - int(mod))
+    book = get_book("", isbn)
+    if book:
+        return HttpResponseRedirect(reverse("book_detail", kwargs={"pk": book.pk}))
     else:
-        json_file = os.path.join(BASE_DIR, "assets\\isbn.json")
-        with open(json_file, "r") as file:
-            data = file.read()
-        books_json = json.loads(data)
-        for category_json in books_json:
-            category = category_json["category"]
-            for isbn in category_json["isbn"]:
-                book = Book.objects.filter(isbn=isbn).first()
-                if book:
-                    continue
-                get_book(category, isbn)
-        PROGRESS.append("READY<br>")
-        for source in SOURCES:
-            PROGRESS.append(source["source"] + ": " + str(source["num"]))
-        return HttpResponse(status=201)
+        return HttpResponseRedirect(reverse("book_list"))
 
 
-def get_book(category, isbn):
+def get_book(genre, isbn):
     book = None
     add_isbn_to_progress(isbn)
     for source in SOURCES:
         PROGRESS.append(source.get("source"))
-        b = try_source(source.get("source"), category, isbn)
+        b = try_source(source.get("source"), genre, isbn)
         if b:
             book = copy.copy(b)
             PROGRESS[len(PROGRESS) - 1] += f": {book.title}"
@@ -87,21 +65,21 @@ def get_book(category, isbn):
     return book
 
 
-def try_source(source, category, isbn):
+def try_source(source, genre, isbn):
     if source == "openlibrary.org":
-        return get_from_openlibrary(category, isbn)
+        return get_from_openlibrary(genre, isbn)
     if source == "bibliotheek.nl":
-        return get_from_bibliotheek_nl(category, isbn)
+        return get_from_bibliotheek_nl(genre, isbn)
     if source == "boekenplatform.nl":
-        return get_from_boekenplatform_nl(category, isbn)
+        return get_from_boekenplatform_nl(genre, isbn)
     if source == "vindboek.nl":
-        return get_from_vindboek_nl(category, isbn)
+        return get_from_vindboek_nl(genre, isbn)
     if source == "worldcat.org":
-        return get_from_worldcat_org(category, isbn)
+        return get_from_worldcat_org(genre, isbn)
     return None
 
 
-def get_from_openlibrary(category, isbn):
+def get_from_openlibrary(genre, isbn):
     def get_json(url):
         url = f"https://openlibrary.org/{url}.json"
         return json.loads(urllib.request.urlopen(url).read())
@@ -127,9 +105,8 @@ def get_from_openlibrary(category, isbn):
                 title=title,
                 isbn=isbn,
                 summary=summary,
-                category=category,
+                genre=genre,
                 authors=authors,
-                source=f"https://openlibrary.org/isbn/{isbn}.json",
             )
             return book
     except Exception as e:
@@ -137,7 +114,7 @@ def get_from_openlibrary(category, isbn):
     return None
 
 
-def get_from_bibliotheek_nl(category, isbn):
+def get_from_bibliotheek_nl(genre, isbn):
     url = f"https://www.bibliotheek.nl/catalogus.catalogus.html?q={isbn}"
     try:
         html = urllib.request.urlopen(url).read()
@@ -152,10 +129,9 @@ def get_from_bibliotheek_nl(category, isbn):
             book = add_book(
                 title=title,
                 isbn=isbn,
-                category=category,
+                genre=genre,
                 summary=summary,
                 authors=[author],
-                source=url,
             )
             return book
     except Exception as e:
@@ -163,7 +139,7 @@ def get_from_bibliotheek_nl(category, isbn):
     return None
 
 
-def get_from_worldcat_org(category, isbn):
+def get_from_worldcat_org(genre, isbn):
     url = f"https://www.worldcat.org/search?q={isbn}&qt=owc_search"
     try:
         html = urllib.request.urlopen(url).read()
@@ -204,9 +180,8 @@ def get_from_worldcat_org(category, isbn):
                 title=title,
                 summary=summary,
                 isbn=isbn,
-                category=category,
+                genre=genre,
                 authors=authors,
-                source=url,
                 cover_url=cover_url,
             )
             return book
@@ -215,7 +190,7 @@ def get_from_worldcat_org(category, isbn):
     return None
 
 
-def get_from_boekenplatform_nl(category, isbn):
+def get_from_boekenplatform_nl(genre, isbn):
     url = f"https://www.boekenplatform.nl/isbn/{isbn}"
     try:
         html = urllib.request.urlopen(url).read()
@@ -225,7 +200,7 @@ def get_from_boekenplatform_nl(category, isbn):
             if td.text.strip() == "Hoofdtitel":
                 tdText = td.nextSibling
                 title = tdText.text.strip()
-                book = add_book(title=title, isbn=isbn, category=category, source=url)
+                book = add_book(title=title, isbn=isbn, genre=genre)
                 return book
     except Exception as e:
         if e.code == 404:
@@ -234,7 +209,7 @@ def get_from_boekenplatform_nl(category, isbn):
     return None
 
 
-def get_from_vindboek_nl(category, isbn):
+def get_from_vindboek_nl(genre, isbn):
     try:
         url = f"https://vindboek.nl/books/term/{isbn}"
         data = urllib.request.urlopen(url)
@@ -257,9 +232,8 @@ def get_from_vindboek_nl(category, isbn):
             book = add_book(
                 title=title,
                 isbn=isbn,
-                category=category,
+                genre=genre,
                 authors=authors,
-                source=url,
                 cover_url=cover_url,
             )
             return book
@@ -273,11 +247,9 @@ def add_book(
         isbn,
         summary=None,
         authors=None,
-        serie=None,
-        category=None,
-        sub_category=None,
+        series=None,
+        genre=None,
         cover_url=None,
-        source=None,
 ):
     try:
         if isbn:
@@ -288,18 +260,9 @@ def add_book(
         book.title = title
         if summary and len(summary) > 0:
             book.summary = summary
-        if serie and len(serie) > 0:
-            serie, _ = Serie.objects.get_or_create(name=serie)
-            book.serie = serie
-        if category and len(category) > 0:
-            category, _ = Category.objects.get_or_create(name=category)
-            sub_cat, _ = SubCategory.objects.get_or_create(category=category, name="")
-            book.sub_category = sub_cat
-        if category and sub_category and len(sub_category) > 0:
-            sub_category, _ = SubCategory.objects.get_or_create(
-                category=category, name=sub_category
-            )
-            book.sub_category = sub_category
+        if series and len(series) > 0:
+            series, _ = Series.objects.get_or_create(name=series)
+            book.series = series
         if cover_url:
             r = requests.get(cover_url)
 
@@ -311,6 +274,11 @@ def add_book(
                 book.cover.save(f"{isbn}.jpg", File(img_temp), save=True)
 
         book.save()
+        if genre and len(genre) > 0:
+            genre, _ = Genre.objects.get_or_create(name=genre)
+            book.genres.add(genre)
+        else:
+            get_genres_by_isbn(book)
         if authors and len(authors) > 0:
             for author in book.authors.all():
                 if author.number_of_books <= 1:
@@ -320,9 +288,6 @@ def add_book(
                 if len(author) > 0:
                     author, _ = Author.objects.get_or_create(name=author)
                     book.authors.add(author)
-        if source:
-            source, _ = InfoSource.objects.get_or_create(name=source)
-            book.sources.add(source)
         return book
     except Exception as e:
         print(f"add_book: {e}")

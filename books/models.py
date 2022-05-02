@@ -43,46 +43,25 @@ class Author(models.Model):
         return self.books.count()
 
 
-class Category(models.Model):
-    name = models.CharField(max_length=100, blank=False, null=False)
+class Genre(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=False, unique=True)
 
     class Meta:
-        ordering = ["name"]
-        verbose_name_plural = "categories"
+        ordering = ("name",)
+        verbose_name_plural = "genres"
 
     def __str__(self):
         return self.name
 
-    def save(self, *args, **kwargs):
-        super(Category, self).save(*args, **kwargs)
-        if not SubCategory.objects.filter(category=self).exists():
-            SubCategory(category=self).save()
-
-
-class SubCategory(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
-    name = models.CharField(max_length=100, blank=True, null=False)
-
-    class Meta:
-        ordering = ("category__name", "name")
-        verbose_name_plural = "subcategories"
-
-    def __str__(self):
-        return self.extended_name
-
-    @property
-    def extended_name(self):
-        if len(self.name) > 0:
-            return f"{self.category} ({self.name})"
-        else:
-            return f"{self.category}"
+    def get_absolute_url(self):
+        return reverse("genre_detail", args=[self.pk])
 
     @property
     def number_of_books(self):
         return self.books.count()
 
 
-class Serie(models.Model):
+class Series(models.Model):
     name = models.CharField(max_length=100, blank=False, null=False)
 
     class Meta:
@@ -94,16 +73,6 @@ class Serie(models.Model):
     @property
     def number_of_books(self):
         return self.books.count()
-
-
-class InfoSource(models.Model):
-    name = models.CharField(max_length=100)
-
-    class Meta:
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name or "-"
 
 
 class Book(models.Model):
@@ -122,21 +91,12 @@ class Book(models.Model):
         null=True,
     )
     authors = models.ManyToManyField(to=Author, related_name="books", blank=True)
-    serie = models.ForeignKey(
-        Serie, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="books"
+    series = models.ForeignKey(
+        Series, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="books"
     )
-    sub_category = models.ForeignKey(
-        SubCategory,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name="books",
-    )
+    genres = models.ManyToManyField(Genre, related_name="books", blank=True)
     cover = models.ImageField(blank=True, null=True, upload_to="covers/")
-    sources = models.ManyToManyField(
-        to=InfoSource, related_name="author_set", blank=True
-    )
-    combined_title = models.CharField(max_length=100, blank=True, null=True)
+    combined_title = models.CharField(max_length=100, blank=True, null=False, default="")
 
     class Meta:
         ordering = ("combined_title", "isbn")
@@ -147,9 +107,6 @@ class Book(models.Model):
     def __str__(self):
         return self.combined_title
 
-    def category(self):
-        return self.sub_category if self.sub_category else "-"
-
     def author_list(self, with_links):
         authors = [
             f'<a href="{author.get_absolute_url()}">{author.name}</a>' if with_links and author.name != 'et al' else author.name
@@ -157,9 +114,35 @@ class Book(models.Model):
         ]
         return ", ".join(authors)
 
+    def genre_list(self, with_links):
+        genres = [
+            f'<a href="{genre.get_absolute_url()}">{genre.name}</a>' if with_links else genre.name
+            for genre in self.genres.all()
+        ]
+        return ", ".join(genres)
+
     @property
     def formatted_isbn(self):
         return format_isbn(self.isbn)
+
+
+class Wish(models.Model):
+    author = models.CharField(max_length=100, blank=True, null=True)
+    title = models.CharField(max_length=100, blank=True, null=True)
+    remarks = models.CharField(max_length=1000, blank=True, null=True)
+
+    class Meta:
+        ordering = ("author", "title", "remarks")
+
+    def __str__(self):
+        str = []
+        if self.author:
+            str.append(self.author)
+        if self.title:
+            str.append(self.title)
+        if self.remarks:
+            str.append(self.remarks)
+        return ", ".join(str)
 
 
 def format_isbn(isbn_code):
@@ -175,9 +158,9 @@ def get_combined_title(book):
     try:
         if book.number and book.number != '':
             number = '{:3d}'.format(book.number)
-            if book.serie:
+            if book.series:
                 title = f' "{title}"' if len(title) > 0 else ""
-                return f'{book.serie.name} {number}{title}'
+                return f'{book.series.name} {number}{title}'
             return f"{title} ({number})"
         return title
     except:

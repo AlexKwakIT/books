@@ -9,14 +9,14 @@ from django.views.generic.edit import CreateView, UpdateView
 from django_filters.views import FilterView
 from django_tables2.views import SingleTableMixin
 
-from books.filters import BookFilter, AuthorFilter, SerieFilter, SubCategoryFilter, PublisherFilter
-from books.forms import BookForm
-from books.models import Author, Book, Publisher, SubCategory, Serie
+from books.filters import BookFilter, AuthorFilter, SeriesFilter, GenreFilter, PublisherFilter
+from books.forms import BookForm, WishForm
+from books.models import Author, Book, Publisher, Genre, Series, Wish
 from books.tables import (
     AuthorTable,
     BookTable,
     PublisherTable,
-    SerieTable, SubCategoryTable,
+    SeriesTable, GenreTable, WishTable,
 )
 
 
@@ -28,9 +28,11 @@ class BookListView(SingleTableMixin, FilterView):
 
     def get_context_data(self, **kwargs):
         context = super(BookListView, self).get_context_data(**kwargs)
-        comics = SubCategory.objects.get(category__name="Comics")
-        context["num_books"] = Book.objects.exclude(sub_category=comics).count()
-        context["num_comics"] = Book.objects.filter(sub_category=comics).count()
+        comics = Genre.objects.filter(name__icontains="comics")
+        num_comics = Book.objects.filter(genres__in=comics).count()
+        num_books = Book.objects.count() - num_comics
+        context["num_books"] = num_books
+        context["num_comics"] = num_comics
         return context
 
     def get_queryset(self):
@@ -49,18 +51,18 @@ class AuthorListView(SingleTableMixin, FilterView):
     filterset_class = AuthorFilter
 
 
-class SubCategoryListView(SingleTableMixin, FilterView):
-    model = SubCategory
-    table_class = SubCategoryTable
-    template_name = "sub_category_list.html"
-    filterset_class = SubCategoryFilter
+class GenreListView(SingleTableMixin, FilterView):
+    model = Genre
+    table_class = GenreTable
+    template_name = "genre_list.html"
+    filterset_class = GenreFilter
 
 
-class SerieListView(SingleTableMixin, FilterView):
-    model = Serie
-    table_class = SerieTable
-    template_name = "serie_list.html"
-    filterset_class = SerieFilter
+class SeriesListView(SingleTableMixin, FilterView):
+    model = Series
+    table_class = SeriesTable
+    template_name = "series_list.html"
+    filterset_class = SeriesFilter
 
 
 class PublisherListView(SingleTableMixin, FilterView):
@@ -70,19 +72,25 @@ class PublisherListView(SingleTableMixin, FilterView):
     filterset_class = PublisherFilter
 
 
+class WishListView(SingleTableMixin, FilterView):
+    model = Wish
+    table_class = WishTable
+    template_name = "wish_list.html"
+
+
 class AuthorDetailView(DetailView):
     model = Author
     template_name = "author_detail.html"
 
 
-class SubCategoryDetailView(DetailView):
-    model = SubCategory
-    template_name = "sub_category_detail.html"
+class GenreDetailView(DetailView):
+    model = Genre
+    template_name = "genre_detail.html"
 
 
 class SerieDetailView(DetailView):
-    model = Serie
-    template_name = "serie_detail.html"
+    model = Series
+    template_name = "series_detail.html"
 
 
 class PublisherDetailView(DetailView):
@@ -92,6 +100,16 @@ class PublisherDetailView(DetailView):
 
 class ImportView(TemplateView):
     template_name = "isbn_import.html"
+
+
+class WishCreateView(CreateView):
+    model = Wish
+    template_name = "wish_form.html"
+    form_class = WishForm
+
+    def form_valid(self, form):
+        form.save()
+        return redirect('wish_create')
 
 
 class BookCreateView(CreateView):
@@ -115,7 +133,3 @@ def book_delete(request, pk):
     if book:
         book.delete()
     return HttpResponseRedirect(reverse("book_list"))
-
-
-def book_add(request):
-    return render(request, "book_add.html")

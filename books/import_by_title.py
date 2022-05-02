@@ -67,7 +67,6 @@ def get_book_by_url(request):
                 title=title,
                 isbn=isbn,
                 authors=authors,
-                source=f"https://www.worldcat.org/{url}",
                 cover_url=f"https:{cover_url}"
             )
             return redirect(book)

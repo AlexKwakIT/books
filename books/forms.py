@@ -1,7 +1,7 @@
 from django import forms
 from django_select2 import forms as s2forms
 
-from .models import Book
+from .models import Book, Wish
 
 
 class AuthorWidget(s2forms.ModelSelect2MultipleWidget):
@@ -16,25 +16,31 @@ class PublisherWidget(s2forms.ModelSelect2Widget):
     ]
 
 
-class SerieWidget(s2forms.ModelSelect2Widget):
+class SeriesWidget(s2forms.ModelSelect2Widget):
     search_fields = [
         "name__icontains",
     ]
 
 
-class SubCategorieWidget(s2forms.ModelSelect2Widget):
+class GenreWidget(s2forms.ModelSelect2MultipleWidget):
     search_fields = [
-        "name__icontains", "category__name__icontains",
+        "name__icontains",
     ]
 
 
 class BookForm(forms.ModelForm):
     class Meta:
         model = Book
-        exclude = ("sources", "combined_title",)
+        exclude = ("combined_title",)
         widgets = {
             "authors": AuthorWidget,
-            "serie": SerieWidget,
-            "sub_category": SubCategorieWidget,
+            "series": SeriesWidget,
+            "genres": GenreWidget,
             "publisher": PublisherWidget,
         }
+
+
+class WishForm(forms.ModelForm):
+    class Meta:
+        model = Wish
+        fields = ("author", "title", "remarks",)

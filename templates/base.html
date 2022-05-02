@@ -156,12 +156,14 @@
                 <img alt="logo" src="{% static "img/books.jpg" %}" width="120" height="120">
                 <br>
                 <ul class="nav flex-column">
-                    <h3>myBooks 0.9</h3>
+                    <h3>myBooks 0.9.220501</h3>
                     {% url 'book_list' as books_url %}
+                    {% url 'wish_list' as wish_list_url %}
                     {% url 'book_create' as books_add_url %}
+                    {% url 'wish_create' as wish_add_url %}
                     {% url 'author_list' as authors_url %}
-                    {% url 'sub_category_list' as sub_categories_url %}
-                    {% url 'serie_list' as series_url %}
+                    {% url 'genre_list' as genre_url %}
+                    {% url 'series_list' as series_url %}
                     {% url 'publisher_list' as publishers_url %}
                     {% url 'maintenance' as maintenance_url %}
                     {% url 'export_json' as export_json_url %}
@@ -170,8 +172,11 @@
                     <li><a href="{{ books_url }}">Books</a></li>
                     <li><a href="{{ books_add_url }}">Add book</a></li>
                     <li>&nbsp;</li>
+                    <li><a href="{{ wish_list_url }}">Wish list</a></li>
+                    <li><a href="{{ wish_add_url }}">Add wish</a></li>
+                    <li>&nbsp;</li>
                     <li><a href="{{ authors_url }}">Authors</a></li>
-                    <li><a href="{{ sub_categories_url }}">Categories</a></li>
+                    <li><a href="{{ genre_url }}">Genres</a></li>
                     <li><a href="{{ series_url }}">Series</a></li>
                     <li><a href="{{ publishers_url }}">Publishers</a></li>
                     <li>&nbsp;</li>
@@ -206,4 +211,3 @@
     <div id="dummy"></div>
 
 {% endblock %}
-

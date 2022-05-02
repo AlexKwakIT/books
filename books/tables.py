@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.utils.safestring import mark_safe
 from django_tables2.utils import A  # alias for Accessor
 
-from books.models import Author, Book, Publisher, SubCategory, Serie
+from books.models import Author, Book, Publisher, Genre, Series, Wish
 
 
 class BookTable(tables.Table):
@@ -15,20 +15,23 @@ class BookTable(tables.Table):
         verbose_name="Publisher",
     )
     authors = tables.Column(empty_values=(), orderable=False)
-    category = tables.LinkColumn("sub_category_detail", args=[A("sub_category_id")], accessor="sub_category", verbose_name="Category")
-    serie = tables.LinkColumn(
-        "serie_detail",
-        args=[A("serie_id")],
-        verbose_name="Serie",
+    genres = tables.Column(empty_values=(), orderable=False)
+    series = tables.LinkColumn(
+        "series_detail",
+        args=[A("series_id")],
+        verbose_name="Series",
     )
 
     class Meta:
         model = Book
         template_name = "django_tables2/bootstrap-responsive.html"
-        fields = ("cover", "combined_title", "isbn", "publisher", "authors", "category", "serie")
+        fields = ("cover", "combined_title", "isbn", "publisher", "authors", "genres", "series")
 
     def render_authors(self, value, record):
         return mark_safe(record.author_list(True))
+
+    def render_genres(self, value, record):
+        return mark_safe(record.genre_list(True))
 
     def render_publisher(self, value, record):
         if value.name.startswith("Unknown"):
@@ -64,17 +67,14 @@ class AuthorTable(tables.Table):
         return (queryset, True)
 
 
-class SubCategoryTable(tables.Table):
-    name = tables.LinkColumn("sub_category_detail", args=[A("pk")], empty_values=[])
+class GenreTable(tables.Table):
+    name = tables.LinkColumn("genre_detail", args=[A("pk")], empty_values=[])
     number_of_books = tables.Column(empty_values=())
 
     class Meta:
-        model = SubCategory
+        model = Genre
         template_name = "django_tables2/bootstrap-responsive.html"
         fields = ["name", "number_of_books"]
-
-    def render_name(self, record, value):
-        return record.extended_name
 
     def order_number_of_books(self, queryset, is_descending):
         queryset = queryset.annotate(num_books=Count("books")).order_by(
@@ -83,12 +83,12 @@ class SubCategoryTable(tables.Table):
         return (queryset, True)
 
 
-class SerieTable(tables.Table):
-    name = tables.LinkColumn("serie_detail", args=[A("pk")])
+class SeriesTable(tables.Table):
+    name = tables.LinkColumn("series_detail", args=[A("pk")])
     number_of_books = tables.Column(empty_values=())
 
     class Meta:
-        model = Serie
+        model = Series
         template_name = "django_tables2/bootstrap-responsive.html"
         fields = ["name", "number_of_books"]
 
@@ -113,3 +113,14 @@ class PublisherTable(tables.Table):
             ("-" if is_descending else "") + "num_books"
         )
         return (queryset, True)
+
+
+class WishTable(tables.Table):
+    author = tables.Column()
+    title = tables.Column()
+    remarks = tables.Column()
+
+    class Meta:
+        model = Wish
+        template_name = "django_tables2/bootstrap-responsive.html"
+        fields = ["author", "title", "remarks"]

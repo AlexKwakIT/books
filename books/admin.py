@@ -3,10 +3,9 @@ from django.contrib import admin
 from books.models import (
     Author,
     Book,
-    Category,
-    SubCategory,
+    Genre,
     Publisher,
-    Serie,
+    Series,
 )
 
 
@@ -22,21 +21,16 @@ class PublisherAdmin(admin.ModelAdmin):
     pass
 
 
-class SerieAdmin(admin.ModelAdmin):
+class SeriesAdmin(admin.ModelAdmin):
     pass
 
 
-class CategoryAdmin(admin.ModelAdmin):
-    pass
-
-
-class SubCategoryAdmin(admin.ModelAdmin):
+class GenreAdmin(admin.ModelAdmin):
     pass
 
 
 admin.site.register(Book, BookAdmin)
 admin.site.register(Author, AuthorAdmin)
 admin.site.register(Publisher, PublisherAdmin)
-admin.site.register(Serie, SerieAdmin)
-admin.site.register(Category, CategoryAdmin)
-admin.site.register(SubCategory, SubCategoryAdmin)
+admin.site.register(Series, SeriesAdmin)
+admin.site.register(Genre, GenreAdmin)
