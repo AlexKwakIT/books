@@ -52,7 +52,6 @@ def export_json(request):
     response = FileResponse(file, as_attachment=True, filename="books.txt")
     return response
 
-
 def export_excel(request):
     ts = datetime.utcnow().strftime('%Y-%m-%d %H-%M')
     filename = f'my_books_{ts}.xlsx'

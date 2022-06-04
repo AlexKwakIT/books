@@ -1,10 +1,221 @@
 import os
+import re
 
 from django.db import transaction
 from django.http import HttpResponse
 
-from books.models import Publisher, Author, Book, Series, Genre
-from books.settings import BASE_DIR
+from books.models import VideoSeries, Video, VIDEO_CHOICE_SERIES
+
+
+@transaction.atomic
+def import_video_series(request):
+    Video.objects.all().delete()
+    VideoSeries.objects.all().delete()
+    base_path = "E:\\Series"
+    for series in os.listdir(base_path):
+         for entry in os.scandir(f"{base_path}\{series}"):
+            if entry.is_file():
+                import_video_serie_episode(series, 0, entry.name, entry.stat().st_size)
+            else:
+                try:
+                    season = int(re.compile('\d+').findall(entry.name)[0])
+                except:
+                    season = 0
+                for entry in os.scandir(f"{base_path}\{series}\{entry.name}"):
+                    import_video_serie_episode(series, season, entry.name, entry.stat().st_size)
+
+    print("READY")
+    return HttpResponse(status=201, content="OK")
+
+
+def import_video_serie_episode(series, season, episode, size):
+    if series == "Doctor Who":
+        return
+    if episode.endswith("srt") or episode.endswith("sub") or size < 1000000:
+        return
+    if import_s01e01(series, season, episode, size):
+        return
+    if import_s1(series, season, episode, size):
+        return
+    if import_01x01(series, season, episode, size):
+        return
+    if import_season_disc(series, season, episode, size):
+        return
+    if import_season_0(series, season, episode, size):
+        return
+    if import_one_season(series, season, episode, size):
+        return
+    print("Not found:", series, season, episode)
+
+
+def import_one_season(series, season, episode, size):
+    if episode.lower().startswith(series.lower()):
+        sep = re.compile(' \d\d\d ')
+        se = sep.findall(episode.replace(".", " ")[len(series):])
+        if len(se) == 1:
+            try:
+                season_episode = se[0]
+                season_nr = int(season_episode[1])
+                episode_nr = int(season_episode[2:4])
+                title = episode[len(series)+4:]
+                video_series, _ = VideoSeries.objects.get_or_create(name=series)
+                Video(
+                    kind=VIDEO_CHOICE_SERIES,
+                    series=video_series,
+                    season=0,
+                    episode=episode_nr,
+                    title=f"Part {episode_nr}",
+                    size=size
+                ).save()
+                return True
+            except Exception as e:
+                print(f"Error {e}")
+    return False
+
+
+def import_s01e01(series, season, episode, size):
+    sep = re.compile('[sS]\d+[eE]\d+')
+    se = sep.findall(episode)
+    if len(se) == 1:
+        season_nr = int(se[0][1:3])
+        episode_nr = int(se[0][4:6])
+        title = episode.split(se[0])[1]
+        if title.startswith("-"):
+            title = title[1:]
+        title = title[0:len(title)-4].replace(".", " ").replace("_", " ").strip()
+        video_series, _ = VideoSeries.objects.get_or_create(name=series)
+        Video(
+            kind=VIDEO_CHOICE_SERIES,
+            series=video_series,
+            season=season_nr,
+            episode=episode_nr,
+            title=title,
+            size=size
+        ).save()
+        return True
+
+    return False
+
+
+def import_s1(series, season, episode, size):
+    sep = re.compile('[sS]\d\d')
+    se = sep.findall(episode)
+    if len(se) == 1:
+        season_nr = int(se[0][1:3])
+        episode_nr = 1
+        title = episode.split(se[0])[1]
+        if title.startswith("-"):
+            title = title[1:]
+        title = title[0:len(title)-4].replace(".", " ").replace("_", " ").strip()
+        video_series, _ = VideoSeries.objects.get_or_create(name=series)
+        Video(
+            kind=VIDEO_CHOICE_SERIES,
+            series=video_series,
+            season=season_nr,
+            episode=episode_nr,
+            title=title,
+            size=size
+        ).save()
+        return True
+
+    return False
+
+
+def import_01x01(series, season, episode, size):
+    sep = re.compile('\d+[xX]\d+')
+    se = sep.findall(episode)
+    if len(se) == 1:
+        se_nrs = se[0].lower().split('x')
+        season_nr = int(se_nrs[0])
+        episode_nr = int(se_nrs[1])
+        title = episode.split(se[0])[1].replace(".", " ").replace("_", " ").strip()
+        if title.startswith("-"):
+            title = title[1:]
+        title = title[0:len(title)-4].replace(".", " ").replace("_", " ").strip()
+        video_series, _ = VideoSeries.objects.get_or_create(name=series)
+        Video(
+            kind=VIDEO_CHOICE_SERIES,
+            series=video_series,
+            season=season_nr,
+            episode=episode_nr,
+            title=title,
+            size=size
+        ).save()
+        return True
+    return False
+
+
+def import_season_0(series, season, episode, size):
+    sep = re.compile('^\d\d ')
+    se = sep.findall(episode)
+    if len(se) == 1:
+        title = episode.split(se[0])[1].replace(".", " ").replace("_", " ").strip()
+        if title.startswith("-"):
+            title = title[1:]
+        title = title[0:len(title)-4]
+        episode_nr = int(episode[0:2])
+        video_series, _ = VideoSeries.objects.get_or_create(name=series)
+        Video(
+            kind=VIDEO_CHOICE_SERIES,
+            series=video_series,
+            season=0,
+            episode=episode_nr,
+            title=title,
+            size=size
+        ).save()
+        return True
+    return False
+
+
+def import_123(series, season, episode, size):
+    sep = re.compile('\.\d\d\d\.')
+    se = sep.findall(episode)
+    if len(se) == 1:
+        season_nr = int(se[0][0])
+        episode_nr = int(se[0][1:2])
+        title = episode.split(se[0])[1]
+        if title.startswith("-"):
+            title = title[1:]
+        title = title[0:len(title)-4].replace(".", " ").replace("_", " ").strip()
+        video_series, _ = VideoSeries.objects.get_or_create(name=series)
+        Video(
+            kind=VIDEO_CHOICE_SERIES,
+            series=video_series,
+            season=season_nr,
+            episode=episode_nr,
+            title=title,
+            size=size
+        ).save()
+        return True
+
+    return False
+
+
+def import_season_disc(series, season, episode, size):
+    sep = re.compile('Season\d+ Disc\d+-\d+')
+    se = sep.findall(episode)
+    if len(se) == 1:
+        se_nrs = se[0].split(' Disc')
+        season_nr = int(se_nrs[0].replace("Season", ""))
+        episode_nr = int(se_nrs[1].split("-")[1])
+        title = episode.split(se[0])[1]
+        if title.startswith("-"):
+            title = title[1:]
+        title = title[0:len(title)-4].replace(".", " ").replace("_", " ").strip()
+        video_series, _ = VideoSeries.objects.get_or_create(name=series)
+        Video(
+            kind=VIDEO_CHOICE_SERIES,
+            series=video_series,
+            season=season_nr,
+            episode=episode_nr,
+            title=title,
+            size=size
+        ).save()
+        return True
+
+    return False
+
+
 
 
 # @transaction.atomic

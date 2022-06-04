@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.utils.safestring import mark_safe
 from django_tables2.utils import A  # alias for Accessor
 
-from books.models import Author, Book, Publisher, Genre, Series, Wish
+from books.models import Author, Book, Publisher, Genre, Series, Wish, Video
 
 
 class BookTable(tables.Table):
@@ -124,3 +124,27 @@ class WishTable(tables.Table):
         model = Wish
         template_name = "django_tables2/bootstrap-responsive.html"
         fields = ["author", "title", "remarks"]
+
+class VideoTable(tables.Table):
+    series = tables.Column()
+    season = tables.Column()
+    episode = tables.Column()
+    title = tables.Column()
+    size = tables.Column(orderable=False)
+
+    class Meta:
+        model = Video
+        template_name = "django_tables2/bootstrap-responsive.html"
+        fields = ["series", "season", "episode", "title", "size"]
+
+    def render_size(self, record, value):
+        return sizeof_fmt(record.size)
+
+
+
+def sizeof_fmt(num, suffix="B"):
+    for unit in ["", "K", "M", "G", "T"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"

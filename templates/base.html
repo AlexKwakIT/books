@@ -168,9 +168,12 @@
                     {% url 'maintenance' as maintenance_url %}
                     {% url 'export_json' as export_json_url %}
                     {% url 'export_excel' as export_excel_url %}
+                    {% url 'video_series_list' as video_series_url %}
 
                     <li><a href="{{ books_url }}">Books</a></li>
                     <li><a href="{{ books_add_url }}">Add book</a></li>
+                    <li>&nbsp;</li>
+                    <li><a href="{{ video_series_url }}">Video Series</a></li>
                     <li>&nbsp;</li>
                     <li><a href="{{ wish_list_url }}">Wish list</a></li>
                     <li><a href="{{ wish_add_url }}">Add wish</a></li>
@@ -185,7 +188,7 @@
                     <li>&nbsp;</li>
                     <li><a href="{{ maintenance_url }}">Maintenance</a></li>
                     <li>&nbsp;</li>
-                    <li><a href="/admin/">Admin</a></li>
+                    <li><a href="/admin/" target="_blank">Admin</a></li>
                 </ul>
 
                 <hr>

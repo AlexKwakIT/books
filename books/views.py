@@ -11,12 +11,12 @@ from django_tables2.views import SingleTableMixin
 
 from books.filters import BookFilter, AuthorFilter, SeriesFilter, GenreFilter, PublisherFilter
 from books.forms import BookForm, WishForm
-from books.models import Author, Book, Publisher, Genre, Series, Wish
+from books.models import Author, Book, Publisher, Genre, Series, Wish, Video
 from books.tables import (
     AuthorTable,
     BookTable,
     PublisherTable,
-    SeriesTable, GenreTable, WishTable,
+    SeriesTable, GenreTable, WishTable, VideoTable,
 )
 
 
@@ -76,6 +76,12 @@ class WishListView(SingleTableMixin, FilterView):
     model = Wish
     table_class = WishTable
     template_name = "wish_list.html"
+
+
+class VideoListView(SingleTableMixin, FilterView):
+    model = Video
+    table_class = VideoTable
+    template_name = "video_list.html"
 
 
 class AuthorDetailView(DetailView):

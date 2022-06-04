@@ -4,6 +4,23 @@ from django.dispatch import receiver
 from django.urls import reverse
 
 
+VIDEO_CHOICE_MOVIE = "MOVIE"
+VIDEO_CHOICE_CABARET = "CABARET"
+VIDEO_CHOICE_IMDB100 = "IMDB100"
+VIDEO_CHOICE_MUSIC = "MUSIC"
+VIDEO_CHOICE_SERIES = "SERIES"
+VIDEO_CHOICE_STARTREK = "STARTREK"
+
+VIDEO_CHOICES = (
+    (VIDEO_CHOICE_MOVIE, "Movie"),
+    (VIDEO_CHOICE_CABARET, "Cabaret"),
+    (VIDEO_CHOICE_IMDB100, "IMDB Top 100"),
+    (VIDEO_CHOICE_MUSIC, "Music Video"),
+    (VIDEO_CHOICE_SERIES, "Series"),
+    (VIDEO_CHOICE_STARTREK, "StarTrek"),
+)
+
+
 class Publisher(models.Model):
     name = models.CharField(max_length=100, blank=False, null=False)
 
@@ -143,6 +160,35 @@ class Wish(models.Model):
         if self.remarks:
             str.append(self.remarks)
         return ", ".join(str)
+
+
+class VideoSeries(models.Model):
+    name = models.CharField(max_length=100, blank=False, null=False)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Video(models.Model):
+    series = models.ForeignKey(
+        VideoSeries, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="videos"
+    )
+    title = models.CharField(max_length=100, blank=False, null=False)
+    kind = models.CharField(max_length=20, choices=VIDEO_CHOICES, blank=False, null=False)
+    season = models.IntegerField(blank=True, null=True)
+    episode = models.IntegerField(blank=True, null=True)
+    size = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["series", "season", "episode", "title"]
+
+    def save(self, *args, **kwargs):
+        if self.title == "":
+            return
+        super().save(*args, **kwargs)
 
 
 def format_isbn(isbn_code):

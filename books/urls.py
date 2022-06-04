@@ -7,6 +7,7 @@ from django.views.generic import TemplateView
 from books.export import export_excel, export_json
 from books.import_by_title import get_book_by_url, import_text
 from books.import_isbn import import_isbn, show_import_status
+from books.import_series import import_video_series
 from books.maintenance import clean, get_genres
 from books.views import (
     AuthorDetailView,
@@ -20,7 +21,7 @@ from books.views import (
     PublisherDetailView,
     PublisherListView,
     SeriesListView,
-    SerieDetailView, GenreListView, GenreDetailView, WishListView, WishCreateView
+    SerieDetailView, GenreListView, GenreDetailView, WishListView, WishCreateView, VideoListView
 )
 
 urlpatterns = [
@@ -59,9 +60,11 @@ urlpatterns = [
     path("publishers/", PublisherListView.as_view(), name="publisher_list"),
     path("publishers/<pk>/", PublisherDetailView.as_view(), name="publisher_detail"),
 
+    path("video/series/", VideoListView.as_view(), name="video_series_list"),
+
     path("maintenance", TemplateView.as_view(template_name='maintenance.html'), name="maintenance"),
     path("clean/", clean, name="clean"),
-    path("do-test/", get_genres, name="do_test"),
+    path("do-test/", import_video_series, name="do_test"),
 ]
 
 if settings.DEBUG:
