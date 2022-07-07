@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.http import StreamingHttpResponse, HttpResponse
 
-from books.models import Author, Publisher, Book, get_combined_title, IsbnPrefix, format_isbn, Genre
+from books.models import Author, Publisher, Book, IsbnPrefix, format_isbn, Genre, get_combined_book_title
 
 
 def cleaning():
@@ -33,7 +33,7 @@ def cleaning():
     cover_files = [f for f in listdir(media_path) if isfile(join(media_path, f))]
     count = 0
     for cover_file in cover_files:
-        book = Book.objects.filter(cover="covers/" + cover_file)
+        book = Book.objects.filter(cover_image="covers/" + cover_file)
         if not book:
             os.remove(media_path + "\\" + cover_file)
             count += 1
@@ -51,7 +51,7 @@ def clean(request):
 
 def do_test(request):
     for book in Book.objects.all():
-        book.combined_title = get_combined_title(book)
+        book.combined_title = get_combined_book_title(book)
         book.save()
     return HttpResponse(status=200, content="OK")
 

@@ -7,7 +7,7 @@ from books.models import Author, Book, Publisher, Genre, Series, Wish, Video
 
 
 class BookTable(tables.Table):
-    cover = tables.Column(orderable=False)
+    cover_image = tables.Column(orderable=False)
     combined_title = tables.LinkColumn("book_detail", args=[A("pk")], verbose_name="Title")
     publisher = tables.LinkColumn(
         "publisher_detail",
@@ -25,7 +25,7 @@ class BookTable(tables.Table):
     class Meta:
         model = Book
         template_name = "django_tables2/bootstrap-responsive.html"
-        fields = ("cover", "combined_title", "isbn", "publisher", "authors", "genres", "series")
+        fields = ("cover_image", "combined_title", "isbn", "publisher", "authors", "genres", "series")
 
     def render_authors(self, value, record):
         return mark_safe(record.author_list(True))
@@ -38,8 +38,8 @@ class BookTable(tables.Table):
             return "?"
         return value.name
 
-    def render_cover(self, record, value):
-        return mark_safe(f"<img src='{record.cover.url}' width='150' />")
+    def render_cover_image(self, record, value):
+        return mark_safe(f"<img src='{record.cover_image.url}' width='150' />")
 
     def render_title(self, record, value):
         text = f'<a href="{record.get_absolute_url()}">{record}</a>'
@@ -125,26 +125,14 @@ class WishTable(tables.Table):
         template_name = "django_tables2/bootstrap-responsive.html"
         fields = ["author", "title", "remarks"]
 
+
 class VideoTable(tables.Table):
     series = tables.Column()
-    season = tables.Column()
-    episode = tables.Column()
-    title = tables.Column()
-    size = tables.Column(orderable=False)
 
     class Meta:
         model = Video
         template_name = "django_tables2/bootstrap-responsive.html"
-        fields = ["series", "season", "episode", "title", "size"]
+        fields = ["type", "series", "combined_title"]
 
-    def render_size(self, record, value):
-        return sizeof_fmt(record.size)
-
-
-
-def sizeof_fmt(num, suffix="B"):
-    for unit in ["", "K", "M", "G", "T"]:
-        if abs(num) < 1024.0:
-            return f"{num:3.1f}{unit}{suffix}"
-        num /= 1024.0
-    return f"{num:.1f}Yi{suffix}"
+    def render_description(self, record, value):
+        return record.description

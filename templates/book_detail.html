@@ -17,9 +17,9 @@
 
     <div class="row">
         <div class="col-md-2">
-            {% if object.cover %}
+            {% if object.cover_image %}
                 <br>
-                <img width="100%" src="{{ object.cover.url }}" alt="{{ object.title }}">
+                <img width="100%" src="{{ object.cover_image.url }}" alt="{{ object.title }}">
             {% endif %}
             {% url "book_scrape_isbn" object.isbn as url %}
             <div class="pt-4"><button onclick="window.location.href='{{ url }}'" type="button" class="btn btn-info btn-block">Scrape book again</button></div>

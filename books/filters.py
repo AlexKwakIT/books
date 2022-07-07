@@ -1,7 +1,8 @@
 import django_filters
+from django.db.models import Q
 from django.forms import TextInput
 
-from books.models import Book, Author, Genre, Series, Publisher
+from books.models import Book, Author, Genre, Series, Publisher, Video
 
 
 class BookFilter(django_filters.FilterSet):
@@ -42,3 +43,16 @@ class PublisherFilter(django_filters.FilterSet):
     class Meta:
         model = Publisher
         fields = ["name"]
+
+
+class VideoFilter(django_filters.FilterSet):
+    combined_title = django_filters.CharFilter(method='my_custom_filter',label="Search")
+
+    class Meta:
+        model = Video
+        fields = ["type", "combined_title"]
+
+    def my_custom_filter(self, queryset, name, value):
+        return queryset.filter(
+            Q(combined_title__icontains=value) | Q(series__icontains=value)
+        )

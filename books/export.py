@@ -6,7 +6,7 @@ from datetime import datetime
 import xlsxwriter
 from django.http import FileResponse
 
-from books.models import Book, Genre, Series, Author, format_isbn, Wish
+from books.models import Book, Genre, Series, Author, format_isbn, Wish, Video
 
 
 def export_json(request):
@@ -37,9 +37,21 @@ def export_json(request):
                 "remarks": wish.remarks if wish.remarks else ""
             }
         )
+    videos = []
+    for video in Video.objects.all():
+        videos.append(
+            {
+                "id": video.id,
+                "type": video.type,
+                "series": video.series,
+                "title": video.title,
+                "seasons": video.seasons,
+            }
+        )
     data = {
         "date": date.today().strftime("%Y-%m-%d"),
         "books": books,
+        "videos": videos,
         "wishes": wishes
     }
     books = json.dumps(data)

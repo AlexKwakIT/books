@@ -1,25 +1,30 @@
 from django.db import models
+from django.db.models.functions import Upper
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 
-
 VIDEO_CHOICE_MOVIE = "MOVIE"
 VIDEO_CHOICE_CABARET = "CABARET"
-VIDEO_CHOICE_IMDB100 = "IMDB100"
 VIDEO_CHOICE_MUSIC = "MUSIC"
 VIDEO_CHOICE_SERIES = "SERIES"
 VIDEO_CHOICE_STARTREK = "STARTREK"
-
 VIDEO_CHOICES = (
     (VIDEO_CHOICE_MOVIE, "Movie"),
     (VIDEO_CHOICE_CABARET, "Cabaret"),
-    (VIDEO_CHOICE_IMDB100, "IMDB Top 100"),
     (VIDEO_CHOICE_MUSIC, "Music Video"),
     (VIDEO_CHOICE_SERIES, "Series"),
     (VIDEO_CHOICE_STARTREK, "StarTrek"),
 )
 
+BOOK_COVER_UNKNOWN = "UNKNOWN"
+BOOK_COVER_HARD_COVER = "HARD_COVER"
+BOOK_COVER_SOFT_COVER = "SOFT_COVER"
+BOOK_COVER_CHOICES = (
+    (BOOK_COVER_UNKNOWN, "Unknown"),
+    (BOOK_COVER_HARD_COVER, "Hard cover"),
+    (BOOK_COVER_SOFT_COVER, "Soft cover"),
+)
 
 class Publisher(models.Model):
     name = models.CharField(max_length=100, blank=False, null=False)
@@ -112,8 +117,9 @@ class Book(models.Model):
         Series, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="books"
     )
     genres = models.ManyToManyField(Genre, related_name="books", blank=True)
-    cover = models.ImageField(blank=True, null=True, upload_to="covers/")
+    cover_image = models.ImageField(blank=True, null=True, upload_to="covers/")
     combined_title = models.CharField(max_length=100, blank=True, null=False, default="")
+    cover = models.CharField(max_length=20, choices=BOOK_COVER_CHOICES, default=BOOK_COVER_UNKNOWN)
 
     class Meta:
         ordering = ("combined_title", "isbn")
@@ -162,33 +168,19 @@ class Wish(models.Model):
         return ", ".join(str)
 
 
-class VideoSeries(models.Model):
-    name = models.CharField(max_length=100, blank=False, null=False)
+class Video(models.Model):
+    type = models.CharField(max_length=20, choices=VIDEO_CHOICES, blank=False, null=False)
+    series = models.CharField(max_length=100, blank=False, null=False)
+    title = models.CharField(max_length=100, blank=True, null=True)
+    seasons = models.CharField(max_length=100, blank=True, null=True)
+    screen_width = models.IntegerField(default=0)
+    combined_title = models.CharField(max_length=100, blank=True, null=False, default="")
 
     class Meta:
-        ordering = ["name"]
+        ordering = [Upper("series"), Upper("title"), "seasons"]
 
     def __str__(self):
-        return self.name
-
-
-class Video(models.Model):
-    series = models.ForeignKey(
-        VideoSeries, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="videos"
-    )
-    title = models.CharField(max_length=100, blank=False, null=False)
-    kind = models.CharField(max_length=20, choices=VIDEO_CHOICES, blank=False, null=False)
-    season = models.IntegerField(blank=True, null=True)
-    episode = models.IntegerField(blank=True, null=True)
-    size = models.BigIntegerField(blank=True, null=True)
-
-    class Meta:
-        ordering = ["series", "season", "episode", "title"]
-
-    def save(self, *args, **kwargs):
-        if self.title == "":
-            return
-        super().save(*args, **kwargs)
+        return f"{self.type}|{self.series}|{self.title}|{self.seasons}"
 
 
 def format_isbn(isbn_code):
@@ -199,7 +191,7 @@ def format_isbn(isbn_code):
     return isbn_code.replace("-", "&#8209;")
 
 
-def get_combined_title(book):
+def get_combined_book_title(book):
     title = book.title or ""
     try:
         if book.number and book.number != '':
@@ -213,6 +205,27 @@ def get_combined_title(book):
         return title
 
 
+def get_combined_video_title(video):
+    from books.import_video import VALID_EXTENTIONS
+    if video.seasons:
+        title = f"{video.title}, " if video.title else ""
+        season = "Seasons" if len(video.seasons) > 1 else "Season"
+        return f"{title} {season} {video.seasons}"
+    elif video.title:
+        title = video.title
+        for ext in VALID_EXTENTIONS:
+            if title.endswith(ext):
+                return title.replace(ext, "")
+        return video.title
+    else:
+        return ""
+
+
 @receiver(pre_save, sender=Book)
-def my_callback(sender, instance, *args, **kwargs):
-    instance.combined_title = get_combined_title(instance)
+def my_book_callback(sender, instance, *args, **kwargs):
+    instance.combined_title = get_combined_book_title(instance)
+
+
+@receiver(pre_save, sender=Video)
+def my_video_callback(sender, instance, *args, **kwargs):
+    instance.combined_title = get_combined_video_title(instance)

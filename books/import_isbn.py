@@ -224,11 +224,11 @@ def get_from_vindboek_nl(genre, isbn):
                 if dt.text.strip() == "Auteur:":
                     authors.append(dt.find_next_sibling().next.next.text.strip())
                 cover_url = None
-                cover = soup.find("div", {"class": "col-md-4 col-6 m-auto"})
-                if cover:
-                    cover = cover.find("img", {"class": "img-fluid"})
-                if cover:
-                    cover_url = cover.attrs["src"]
+                cover_image = soup.find("div", {"class": "col-md-4 col-6 m-auto"})
+                if cover_image:
+                    cover_image = cover_image.find("img", {"class": "img-fluid"})
+                if cover_image:
+                    cover_url = cover_image.attrs["src"]
             book = add_book(
                 title=title,
                 isbn=isbn,
@@ -271,7 +271,7 @@ def add_book(
             length = img_temp.tell()
             img_temp.flush()
             if length > 2000:
-                book.cover.save(f"{isbn}.jpg", File(img_temp), save=True)
+                book.cover_image.save(f"{isbn}.jpg", File(img_temp), save=True)
 
         book.save()
         if genre and len(genre) > 0:

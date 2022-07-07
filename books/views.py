@@ -9,7 +9,7 @@ from django.views.generic.edit import CreateView, UpdateView
 from django_filters.views import FilterView
 from django_tables2.views import SingleTableMixin
 
-from books.filters import BookFilter, AuthorFilter, SeriesFilter, GenreFilter, PublisherFilter
+from books.filters import BookFilter, AuthorFilter, SeriesFilter, GenreFilter, PublisherFilter, VideoFilter
 from books.forms import BookForm, WishForm
 from books.models import Author, Book, Publisher, Genre, Series, Wish, Video
 from books.tables import (
@@ -82,6 +82,7 @@ class VideoListView(SingleTableMixin, FilterView):
     model = Video
     table_class = VideoTable
     template_name = "video_list.html"
+    filterset_class = VideoFilter
 
 
 class AuthorDetailView(DetailView):

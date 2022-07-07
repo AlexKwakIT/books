@@ -2,14 +2,14 @@
 
 from django.db import migrations, models
 
-from books.models import get_combined_title
+from books.models import get_combined_book_title
 
 
 def fill_combined_title(apps, schema_editor):
     Book = apps.get_model('books', 'Book')
     for book in Book.objects.all():
         try:
-            book.combined_title = get_combined_title(book)
+            book.combined_title = get_combined_book_title(book)
             book.save()
             print(book, "OK")
         except Exception as e:
