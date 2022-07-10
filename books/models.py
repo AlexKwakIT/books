@@ -174,7 +174,6 @@ class Video(models.Model):
     title = models.CharField(max_length=100, blank=True, null=True)
     seasons = models.CharField(max_length=100, blank=True, null=True)
     screen_width = models.IntegerField(default=0)
-    combined_title = models.CharField(max_length=100, blank=True, null=False, default="")
 
     class Meta:
         ordering = [Upper("series"), Upper("title"), "seasons"]

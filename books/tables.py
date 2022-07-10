@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.utils.safestring import mark_safe
 from django_tables2.utils import A  # alias for Accessor
 
-from books.models import Author, Book, Publisher, Genre, Series, Wish, Video
+from books.models import Author, Book, Publisher, Genre, Series, Wish, Video, get_combined_video_title
 
 
 class BookTable(tables.Table):
@@ -128,11 +128,12 @@ class WishTable(tables.Table):
 
 class VideoTable(tables.Table):
     series = tables.Column()
+    title = tables.Column(empty_values=())
 
     class Meta:
         model = Video
         template_name = "django_tables2/bootstrap-responsive.html"
-        fields = ["type", "series", "combined_title"]
+        fields = ["type", "series", "title"]
 
-    def render_description(self, record, value):
-        return record.description
+    def render_title(self, record, value):
+        return get_combined_video_title(record)

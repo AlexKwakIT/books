@@ -54,5 +54,5 @@ class VideoFilter(django_filters.FilterSet):
 
     def my_custom_filter(self, queryset, name, value):
         return queryset.filter(
-            Q(combined_title__icontains=value) | Q(series__icontains=value)
+            Q(title__icontains=value) | Q(seasons__icontains=value) | Q(series__icontains=value)
         )
