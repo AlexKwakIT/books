@@ -1,12 +1,16 @@
-import io
+import os, sys, io
+import PIL.Image
 import json
 from datetime import date
 from datetime import datetime
+import base64
 
 import xlsxwriter
 from django.http import FileResponse
 
-from books.models import Book, Genre, Series, Author, format_isbn, Wish, Video, get_combined_video_title
+from django.conf import settings
+from books.models import Book, Genre, Series, Author, format_isbn, Wish, Video, get_combined_video_title, \
+    BOOK_COVER_UNKNOWN, BOOK_COVER_CHOICES
 
 
 def export_json(request):
@@ -15,8 +19,7 @@ def export_json(request):
         books.append(
             {
                 "id": book.pk,
-                "title": book.combined_title.replace("'", "\'").replace("   ", "  ").replace("  ",
-                                                                                             " ") if book.combined_title else "",
+                "title": book.combined_title.replace("'", "\'").replace("   ", "  ").replace("  ", " ") if book.combined_title else "",
                 "isbn": format_isbn(book.isbn).replace("&#8209;", "-") if book.isbn else "",
                 "summary": book.summary.replace("'", "\'") if book.summary else "",
                 "remarks": book.remarks.replace("'", "\'") if book.remarks else "",
@@ -24,7 +27,10 @@ def export_json(request):
                 "publisher": book.publisher.name.replace("'", "\'") if book.publisher else "",
                 "series": book.series.name.replace("'", "\'") if book.series else "",
                 "number": book.number or "",
-                "genres": [genre.name.replace("'", "\'") for genre in book.genres.all()]
+                "genres": [genre.name.replace("'", "\'") for genre in book.genres.all()],
+                "image": image_base64_encoded(f"{settings.BASE_DIR}{book.cover_image.url}") if book.cover_image else "",
+                "image100": resized_image_base64_encoded(f"{settings.BASE_DIR}{book.cover_image.url}") if book.cover_image else "",
+                "cover": get_cover(book.cover) if book.cover != BOOK_COVER_UNKNOWN else "",
             }
         )
     wishes = []
@@ -57,13 +63,19 @@ def export_json(request):
     }
     books = json.dumps(data)
 
-    f = open('books.txt', 'w+')
+    f = open('books.json', 'w+')
     f.write(books)
     f.close()
 
-    file = open("books.txt", "rb")
-    response = FileResponse(file, as_attachment=True, filename="books.txt")
+    file = open("books.json", "rb")
+    response = FileResponse(file, as_attachment=True, filename="books.json")
     return response
+
+def get_cover(cover):
+    for (choice_cap, choice) in BOOK_COVER_CHOICES:
+        if choice_cap == cover:
+            return choice
+    return ""
 
 def export_excel(request):
     ts = datetime.utcnow().strftime('%Y-%m-%d %H-%M')
@@ -152,3 +164,21 @@ def export_excel(request):
     buffer.seek(0)
 
     return FileResponse(buffer, as_attachment=True, filename=filename)
+
+
+def resized_image_base64_encoded(infile):
+    outfile = "C:\\Temp\\temp.jpg"
+    if infile != outfile:
+        try:
+            im = PIL.Image.open(infile).convert('RGB')
+            im.thumbnail((100, 100), PIL.Image.ANTIALIAS)
+            im.save(outfile, "JPEG")
+        except IOError as e:
+            print(f"cannot create thumbnail for '{infile}': {e}")
+        with open(outfile, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def image_base64_encoded(infile):
+    with open(infile, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")

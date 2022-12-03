@@ -7,10 +7,11 @@ from books.models import Book, Author, Genre, Series, Publisher, Video
 
 class BookFilter(django_filters.FilterSet):
     combined_title = django_filters.CharFilter(lookup_expr="icontains", widget=TextInput(attrs={'placeholder': 'Title contains'}))
+    isbn = django_filters.CharFilter(lookup_expr="icontains", widget=TextInput(attrs={'placeholder': 'ISBN contains'}))
 
     class Meta:
         model = Book
-        fields = ["combined_title"]
+        fields = ["combined_title", "isbn"]
 
 
 class AuthorFilter(django_filters.FilterSet):

@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
 
+from books.new_photos import new_photos
 from books.export import export_excel, export_json
 from books.import_by_title import get_book_by_url, import_text
 from books.import_isbn import import_isbn, show_import_status
@@ -61,6 +62,8 @@ urlpatterns = [
     path("publishers/<pk>/", PublisherDetailView.as_view(), name="publisher_detail"),
 
     path("video/series/", VideoListView.as_view(), name="video_series_list"),
+
+    path("new-photos/", new_photos, name="new_photos"),
 
     path("maintenance", TemplateView.as_view(template_name='maintenance.html'), name="maintenance"),
     path("clean/", clean, name="clean"),

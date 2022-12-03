@@ -13,8 +13,24 @@ def import_text(request, text):
         if text[index] not in valid_chars:
             text = text[:index] + "+" + text[index + 1:]
 
-    url = f"https://www.worldcat.org/search?qt=worldcat_org_all&q={text}&qt=results_page#%2528x0%253Abook%2Bx4%253Aprintbook%2529format"
-    html = urllib.request.urlopen(url).read()
+    url = f"https://www.worldcat.org/search?qt=worldcat_org_all&q={text}"
+    # print(url)
+    # html = urllib.request.urlopen(url).read()
+    #
+    # link = "http://example.com"
+    r = urllib.request.urlopen(url)
+    # r.add_header('Cookie', 'sessionid=13cxrt4uytfc6ijvgeoflmb3u9jmjuhil; csrftoken=jdEKPN8iL62hdaq1hmMuID9DMALiiDIq')
+    r.add_header('Upgrade-Insecure-Requests', '1')
+    r.add_header('Accept-Encoding', 'gzip, deflate, sdch, br')
+    r.add_header('User-Agent',
+                 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36')
+    r.add_header('Connection', 'keep-alive')
+    r.add_header('Cache-Control', 'max-age=0')
+    r.add_header('Accept-Language', 'en-US,en;q=0.8,pt;q=0.6')
+    r.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+    response = urllib.urlopen(r)
+    html = response.read()
+
     soup = BeautifulSoup(html, "html.parser")
 
     data = []

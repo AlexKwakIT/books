@@ -1,6 +1,7 @@
-import copy
 import datetime
+import functools
 import json
+import threading
 import urllib
 from tempfile import NamedTemporaryFile
 
@@ -18,6 +19,8 @@ from books.models import (
     Genre,
 )
 
+lock = threading.Lock()
+
 PROGRESS = []
 SOURCES = [
     {"source": "bibliotheek.nl", "num": 0},
@@ -26,9 +29,14 @@ SOURCES = [
     {"source": "worldcat.org", "num": 0},
     {"source": "openlibrary.org", "num": 0},
 ]
+BOOK = []
 
 
 def import_isbn(request, isbn):
+
+    PROGRESS.clear()
+    isbn = isbn.replace("-", "")
+    log("<b>ISBN</b>", f"<b>{isbn}</b>")
     if len(isbn) == 10:
         isbn = "978" + isbn[:9]
         sum = 0
@@ -40,46 +48,36 @@ def import_isbn(request, isbn):
             isbn += '0'
         else:
             isbn += str(10 - int(mod))
-    book = get_book("", isbn)
-    if book:
-        return HttpResponseRedirect(reverse("book_detail", kwargs={"pk": book.pk}))
-    else:
-        return HttpResponseRedirect(reverse("book_list"))
+    get_book("", isbn)
+    return HttpResponseRedirect(reverse("import"))
 
 
 def get_book(genre, isbn):
-    book = None
-    add_isbn_to_progress(isbn)
-    for source in SOURCES:
-        PROGRESS.append(source.get("source"))
-        b = try_source(source.get("source"), genre, isbn)
-        if b:
-            book = copy.copy(b)
-            PROGRESS[len(PROGRESS) - 1] += f": {book.title}"
-            source["num"] = source.get("num") + 1
-        else:
-            PROGRESS[len(PROGRESS) - 1] += f": NOT FOUND"
-    if book:
-        with open("isbn.lst", "a") as myfile:
-            myfile.write(f"{book.isbn}\n")
-    return book
+    threads = []
 
+    thread1 = threading.Thread(target=get_from_openlibrary, args=(genre, isbn))
+    threads.append(thread1)
+    thread1.start()
 
-def try_source(source, genre, isbn):
-    if source == "openlibrary.org":
-        return get_from_openlibrary(genre, isbn)
-    if source == "bibliotheek.nl":
-        return get_from_bibliotheek_nl(genre, isbn)
-    if source == "boekenplatform.nl":
-        return get_from_boekenplatform_nl(genre, isbn)
-    if source == "vindboek.nl":
-        return get_from_vindboek_nl(genre, isbn)
-    if source == "worldcat.org":
-        return get_from_worldcat_org(genre, isbn)
-    return None
+    thread2 = threading.Thread(target=get_from_bibliotheek_nl, args=(genre, isbn))
+    threads.append(thread2)
+    thread2.start()
+
+    thread3 = threading.Thread(target=get_from_boekenplatform_nl, args=(genre, isbn))
+    threads.append(thread3)
+    thread3.start()
+
+    thread4 = threading.Thread(target=get_from_vindboek_nl, args=(genre, isbn))
+    threads.append(thread4)
+    thread4.start()
+
+    thread5 = threading.Thread(target=get_from_worldcat_org, args=(genre, isbn))
+    threads.append(thread5)
+    thread5.start()
 
 
 def get_from_openlibrary(genre, isbn):
+    log("OpenLibrary.org", "start")
     def get_json(url):
         url = f"https://openlibrary.org/{url}.json"
         return json.loads(urllib.request.urlopen(url).read())
@@ -94,52 +92,59 @@ def get_from_openlibrary(genre, isbn):
             title = work["title"]
             summary = work["description"]
         authors = []
-        for author in data["authors"]:
-            author_json = get_json(author["key"])
-            authors.append(author_json["name"])
+        if "authors" in data:
+            for author in data["authors"]:
+                author_json = get_json(author["key"])
+                authors.append(author_json["name"])
         if "contributions" in data:
             for author in data["contributions"]:
                 authors.append(author)
         if title:
-            book = add_book(
+            add_book(
                 title=title,
                 isbn=isbn,
                 summary=summary,
                 genre=genre,
                 authors=authors,
             )
-            return book
+            log("OpenLibrary.org", "FOUND")
     except Exception as e:
-        print(f"get_from_openlibrary: {e}")
+        log("OpenLibrary.org", f"{e}")
     return None
 
 
 def get_from_bibliotheek_nl(genre, isbn):
+    log("Bibliotheek.nl", "start")
     url = f"https://www.bibliotheek.nl/catalogus.catalogus.html?q={isbn}"
     try:
         html = urllib.request.urlopen(url).read()
         soup = BeautifulSoup(html, "html.parser")
         h3 = soup.find("h3")
-        if h3.text.startswith("Helaas"):
-            return None
-        author = h3.findChildren()[0].text.strip()
-        title = h3.findChildren()[1].text.strip()
-        summary = soup.find("p", {"class": "maintext separate"}).text.strip()
-        if title:
-            book = add_book(
-                title=title,
-                isbn=isbn,
-                genre=genre,
-                summary=summary,
-                authors=[author],
-            )
-            return book
+        if not h3.text.startswith("Helaas"):
+            href = h3.findChildren()[0]['href']
+            url = f"https://www.bibliotheek.nl{href}"
+            html = urllib.request.urlopen(url).read()
+            soup = BeautifulSoup(html, "html.parser")
+            title = soup.find("span", "title").text.strip()
+            author = soup.find("span", "creator").text.strip()
+            summary = soup.find("div", {"class": "intro"}).text.strip()
+
+            if title:
+                add_book(
+                    title=title,
+                    isbn=isbn,
+                    genre=genre,
+                    summary=summary,
+                    authors=[author],
+                )
+                log("Bibliotheek.nl", "FOUND")
+        log("Bibliotheek.nl", "ended")
     except Exception as e:
-        print(f"get_from_bibliotheek_nl: {e}")
-    return None
+        log("Bibliotheek.nl", f"{e}")
 
 
 def get_from_worldcat_org(genre, isbn):
+    log("WorldCat.org", "start")
     url = f"https://www.worldcat.org/search?q={isbn}&qt=owc_search"
     try:
         html = urllib.request.urlopen(url).read()
@@ -151,7 +156,7 @@ def get_from_worldcat_org(genre, isbn):
 
         detail_url = td_coverart.findChild("a").attrs["href"]
         url = f"https://www.worldcat.org{detail_url}"
-        html = urllib.request.urlopen(url).read().decode()
+        html = urllib.request.urlopen(url, timeout=5).read().decode()
         if isbn not in html:
             raise Exception("ISBN not found in HTML")
         soup = BeautifulSoup(html, "html.parser")
@@ -176,7 +181,7 @@ def get_from_worldcat_org(genre, isbn):
             pass
 
         if title:
-            book = add_book(
+            add_book(
                 title=title,
                 summary=summary,
                 isbn=isbn,
@@ -184,13 +189,15 @@ def get_from_worldcat_org(genre, isbn):
                 authors=authors,
                 cover_url=cover_url,
             )
-            return book
+            log("WorldCat.org", "FOUND")
+        else:
+            log("WorldCat.org", "ended")
     except Exception as e:
-        print(f"get_from_worldcat_org: {e}")
-    return None
+        log("WorldCat.org", f"{e}")
 
 
 def get_from_boekenplatform_nl(genre, isbn):
+    log("BoekenPlatform.nl", "start")
     url = f"https://www.boekenplatform.nl/isbn/{isbn}"
     try:
         html = urllib.request.urlopen(url).read()
@@ -200,21 +207,25 @@ def get_from_boekenplatform_nl(genre, isbn):
             if td.text.strip() == "Hoofdtitel":
                 tdText = td.nextSibling
                 title = tdText.text.strip()
-                book = add_book(title=title, isbn=isbn, genre=genre)
-                return book
+                add_book(title=title, isbn=isbn, genre=genre)
+                log("found in BoekenPlatform.nl")
+            else:
+                log("BoekenPlatform.nl", "ended")
     except Exception as e:
-        if e.code == 404:
-            return None
-        print(f"get_from_boekenplatform_nl : {e}")
-    return None
+        if e.code != 404:
+            log("BoekenPlatform.nl", f"{e}")
+        else:
+            log("BoekenPlatform.nl", "ended")
 
 
 def get_from_vindboek_nl(genre, isbn):
+    log("VindBoek.nl", "start")
     try:
         url = f"https://vindboek.nl/books/term/{isbn}"
-        data = urllib.request.urlopen(url)
+        data = urllib.request.urlopen(url, timeout=5)
         html = data.read()
         if html.decode().startswith("No result"):
+            log("VindBoek.nl", "ended")
             return None
         soup = BeautifulSoup(html, "html.parser")
         authors = []
@@ -229,19 +240,32 @@ def get_from_vindboek_nl(genre, isbn):
                     cover_image = cover_image.find("img", {"class": "img-fluid"})
                 if cover_image:
                     cover_url = cover_image.attrs["src"]
-            book = add_book(
+            add_book(
                 title=title,
                 isbn=isbn,
                 genre=genre,
                 authors=authors,
                 cover_url=cover_url,
             )
-            return book
-        return None
+            log("VindBoek.nl", "FOUND")
+        else:
+            log("VindBoek.nl", "ended")
     except Exception as e:
-        print(f"get_from_vindboek_nl: {e}")
+        log("VindBoek.nl", f"{e}")
 
 
+def synchronized(lock):
+    """ Synchronization decorator """
+    def wrap(f):
+        @functools.wraps(f)
+        def newFunction(*args, **kw):
+            with lock:
+                return f(*args, **kw)
+        return newFunction
+    return wrap
+
+
+@synchronized(lock)
 def add_book(
         title,
         isbn,
@@ -251,6 +275,9 @@ def add_book(
         genre=None,
         cover_url=None,
 ):
+    if Book.objects.filter(isbn=isbn).exists():
+        log("<b>Book already exists</b>", "")
+        return
     try:
         if isbn:
             book, _ = Book.objects.get_or_create(isbn=isbn)
@@ -288,20 +315,28 @@ def add_book(
                 if len(author) > 0:
                     author, _ = Author.objects.get_or_create(name=author)
                     book.authors.add(author)
+        url = reverse("book_detail", args=[book.pk])
+        log("<b>Book found</b>", f'<a href="{url}">See book</a>')
         return book
     except Exception as e:
-        print(f"add_book: {e}")
-        return None
+        log("Add book", f"{e}")
 
 
 def show_import_status(request):
-    return HttpResponse(status=201, content="<br>".join(PROGRESS))
+    html = "<table>"
+    for mess1, mess2 in PROGRESS:
+        if mess2 == "":
+            html += f'<tr><td colspan="2">{mess1}</td></tr>'
+        else:
+            html += f'<tr><td>{mess1}</td><td>{mess2}</td></tr>'
+    html += "</table>"
+    return HttpResponse(status=201, content=html)
 
 
 def add_isbn_to_progress(isbn):
     e = datetime.datetime.now()
     t = "%02d:%02d:%02d" % (e.hour, e.minute, e.second)
-    PROGRESS.append(f"<br><b>{t} ISBN: {isbn}</b>")
+    print(f"<br><b>{t} ISBN: {isbn}</b>")
 
 
 def add_title_to_progress(title):
@@ -315,8 +350,15 @@ def add_title_to_progress(title):
         index -= 1
 
 
-def add_source_to_progress(source):
-    if "<b>" in PROGRESS[len(PROGRESS) - 1]:
-        PROGRESS.append(source)
-    else:
-        PROGRESS[len(PROGRESS) - 1] += ", " + source
+def log(source, message):
+    found = False
+    for index in range(0, len(PROGRESS)):
+        mess1, mess2 = PROGRESS[index]
+        if mess1 == source:
+            PROGRESS[index] = (source, message)
+            found = True
+    if not found:
+        PROGRESS.append((source, message))
+    e = datetime.datetime.now()
+    t = "%02d:%02d:%02d" % (e.hour, e.minute, e.second)
+    print(f"{t}: {source} {message}")

@@ -84,6 +84,13 @@
                     {% endfor %}
                 {% endif %}
 
+                {% if object.cover %}
+                    <tr class="pt-2">
+                        <td class="pt-2">Cover:</td>
+                        <td class="pt-2">{{ object.cover }}</td>
+                    </tr>
+                {% endif %}
+
                 {% if object.series %}
                     {% url 'series_detail' object.series.pk as series_url %}
                     <tr class="pt-2">
