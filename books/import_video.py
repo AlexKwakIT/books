@@ -1,4 +1,4 @@
-import cv2
+#import cv2
 import os
 import re
 
@@ -126,16 +126,16 @@ def get_movies(type, base_path, movie, series=None):
             if not entry.is_file():
                 print(f'Warning: Found extra folder for "{movie}"')
                 continue
-            if has_valid_extention(entry.name):
-                vid = cv2.VideoCapture(entry.path)
-                width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-                Video(
-                    type=type,
-                    title=entry.name,
-                    series=series if series else movie,
-                    seasons="",
-                    screen_width=width
-                ).save()
+            # if has_valid_extention(entry.name):
+            #     vid = cv2.VideoCapture(entry.path)
+            #     width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+            #     Video(
+            #         type=type,
+            #         title=entry.name,
+            #         series=series if series else movie,
+            #         seasons="",
+            #         screen_width=width
+            #     ).save()
         except Exception as e:
             print(f'Error for "{entry.name}": {e}')
 

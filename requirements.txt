@@ -15,5 +15,3 @@ autoflake
 django-filter
 xlsxwriter
 pyisbn
-opencv-python
-djangorestframework
